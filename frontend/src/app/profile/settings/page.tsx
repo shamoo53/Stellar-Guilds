@@ -85,6 +85,7 @@ export default function SettingsPage() {
                 name="bio"
                 id="bio"
                 rows={4}
+                maxLength={250}
                 value={formData.bio}
                 onChange={handleChange}
                 className="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-gray-900 focus:border-blue-500 focus:ring-blue-500"

@@ -9,11 +9,11 @@ interface ReputationCardProps {
 }
 
 const tierStyles = {
-  Bronze: "border-stone-400 bg-gradient-to-br from-stone-50 to-stone-100",
-  Silver: "border-gray-300 bg-gradient-to-br from-gray-50 to-gray-100",
-  Gold: "border-yellow-400 bg-gradient-to-r from-yellow-300/20 to-yellow-100/50 shadow-yellow-200/50 shadow-lg",
-  Platinum: "border-cyan-400 bg-gradient-to-r from-cyan-300/20 to-cyan-100/50 shadow-cyan-200/50 shadow-lg",
-  Diamond: "border-fuchsia-500 bg-gradient-to-r from-fuchsia-300/20 to-fuchsia-100/50 shadow-fuchsia-200/50 shadow-lg animate-pulse-slow",
+  Bronze: "border-stone-200 bg-stone-50 shadow-sm",
+  Silver: "border-slate-200 bg-slate-50 shadow-sm",
+  Gold: "border-yellow-400 bg-gradient-to-br from-yellow-50 to-yellow-100 shadow-lg shadow-yellow-500/20",
+  Platinum: "border-cyan-400 bg-gradient-to-br from-cyan-50 to-cyan-100 shadow-lg shadow-cyan-500/20",
+  Diamond: "bg-gradient-to-br from-fuchsia-50 to-purple-100 diamond-glow",
 };
 
 const tierIcons = {
