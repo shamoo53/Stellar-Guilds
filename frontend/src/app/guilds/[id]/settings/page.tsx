@@ -44,7 +44,7 @@ export default function GuildSettingsPage() {
             Guild Not Found
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            The guild you're looking for doesn't exist
+            The guild you&apos;re looking for doesn&apos;t exist
           </p>
           <Link href="/guilds">
             <Button variant="primary">Back to Guilds</Button>
@@ -102,7 +102,7 @@ export default function GuildSettingsPage() {
             Guild Settings
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Manage your guild's information and preferences
+            Manage your guild&apos;s information and preferences
           </p>
         </div>
 

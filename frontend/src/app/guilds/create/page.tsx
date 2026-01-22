@@ -82,7 +82,7 @@ export default function CreateGuildPage() {
           <ul className="space-y-2 text-sm text-blue-800 dark:text-blue-200">
             <li className="flex items-start gap-2">
               <span className="text-blue-500 mt-1">•</span>
-              <span>You'll be the owner of the guild with full administrative privileges</span>
+              <span>You&apos;ll be the owner of the guild with full administrative privileges</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-blue-500 mt-1">•</span>
@@ -94,7 +94,7 @@ export default function CreateGuildPage() {
             </li>
             <li className="flex items-start gap-2">
               <span className="text-blue-500 mt-1">•</span>
-              <span>Build your guild's reputation through active participation</span>
+              <span>Build your guild&apos;s reputation through active participation</span>
             </li>
           </ul>
         </div>

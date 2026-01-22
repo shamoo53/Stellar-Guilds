@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowLeft, Settings, UserPlus, Activity, Users as UsersIcon } from 'lucide-react'
 import { useGuildStore } from '@/store/guildStore'
 import { GuildStats } from '@/features/guilds/components/GuildStats'
@@ -45,7 +46,7 @@ export default function GuildDetailPage() {
             Guild Not Found
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            The guild you're looking for doesn't exist
+            The guild you&apos;re looking for doesn&apos;t exist
           </p>
           <Link href="/guilds">
             <Button variant="primary">Back to Guilds</Button>
@@ -86,9 +87,11 @@ export default function GuildDetailPage() {
               {/* Logo */}
               <div className="w-20 h-20 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-3xl font-bold flex-shrink-0">
                 {currentGuild.logo ? (
-                  <img
+                  <Image
                     src={currentGuild.logo}
                     alt={currentGuild.name}
+                    width={80}
+                    height={80}
                     className="w-full h-full object-cover rounded-lg"
                   />
                 ) : (

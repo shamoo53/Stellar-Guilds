@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { MoreVertical, UserMinus, Shield, User } from 'lucide-react'
 import { RoleBadge } from './RoleBadge'
 import { Button } from '@/components/ui/Button'
@@ -44,7 +45,7 @@ export function MemberList({
             {/* Avatar */}
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold">
               {member.avatar ? (
-                <img src={member.avatar} alt={member.username} className="w-full h-full object-cover rounded-full" />
+                <Image src={member.avatar} alt={member.username} width={40} height={40} className="w-full h-full object-cover rounded-full" />
               ) : (
                 member.username.charAt(0).toUpperCase()
               )}

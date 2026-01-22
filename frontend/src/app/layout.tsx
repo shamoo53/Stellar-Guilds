@@ -14,9 +14,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className="min-h-screen bg-stellar-navy text-stellar-white font-sans">
-        <div className="flex min-h-screen">
-          {children}
-        </div>
+        {children}
       </body>
     </html>
   )

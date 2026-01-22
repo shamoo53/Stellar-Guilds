@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { Users, TrendingUp, Calendar } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import type { Guild } from '@/types/ui'
@@ -25,7 +26,7 @@ export function GuildCard({ guild }: GuildCardProps) {
           <div className="flex items-start justify-between mb-4">
             <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
               {guild.logo ? (
-                <img src={guild.logo} alt={guild.name} className="w-full h-full object-cover rounded-lg" />
+                <Image src={guild.logo} alt={guild.name} width={64} height={64} className="w-full h-full object-cover rounded-lg" />
               ) : (
                 guild.name.charAt(0)
               )}
