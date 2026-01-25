@@ -6,6 +6,9 @@ frontend/build/
 frontend/.env*.local
 frontend/.env
 
+#github
+.github/ISSUE_TEMPLATE/
+
 # Contract (Rust)
 contract/target/
 contract/Cargo.lock
