@@ -70,7 +70,7 @@ pub fn store_transaction(env: &Env, tx: &Transaction) {
     txs.set(tx.id, tx.clone());
     env.storage().persistent().set(&TRANSACTIONS_KEY, &txs);
 
-    // Update treasury index
+    // Update treasury index - only add if this is a new transaction (updates don't append)
     let mut index: Map<u64, Vec<u64>> = env
         .storage()
         .persistent()
@@ -78,8 +78,11 @@ pub fn store_transaction(env: &Env, tx: &Transaction) {
         .unwrap_or_else(|| Map::new(env));
 
     let mut list = index.get(tx.treasury_id).unwrap_or_else(|| Vec::new(env));
-    list.push_back(tx.id);
-    index.set(tx.treasury_id, list);
+    let already_indexed = list.iter().any(|id| id == tx.id);
+    if !already_indexed {
+        list.push_back(tx.id);
+        index.set(tx.treasury_id, list);
+    }
     env.storage()
         .persistent()
         .set(&TREASURY_TX_INDEX_KEY, &index);

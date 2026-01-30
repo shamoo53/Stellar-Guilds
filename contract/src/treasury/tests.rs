@@ -132,7 +132,7 @@ mod tests {
         assert_eq!(bal, 500);
 
         let history = client.get_transaction_history(&treasury_id, &10u32);
-        assert_eq!(history.len(), 3); // 1 deposit + 1 withdraw proposal + executed state stored
+        assert_eq!(history.len(), 2); // 1 deposit + 1 withdrawal (proposed then executed)
     }
 
     #[test]

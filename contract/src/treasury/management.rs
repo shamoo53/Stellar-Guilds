@@ -1,8 +1,8 @@
 use soroban_sdk::{token::Client as TokenClient, Address, Env, String, Symbol, Vec};
 
 use crate::treasury::multisig::{
-    add_approval, assert_signer, expire_if_needed, required_approvals_for_tx, validate_threshold,
-    TX_EXPIRY_SECONDS,
+    add_approval, assert_signer, ensure_is_signer, expire_if_needed, required_approvals_for_tx,
+    validate_threshold, TX_EXPIRY_SECONDS,
 };
 use crate::treasury::storage::{
     get_allowance, get_budget, get_next_treasury_id, get_next_tx_id, get_treasury,
@@ -208,7 +208,7 @@ pub fn approve_transaction(env: &Env, tx_id: u64, approver: Address) -> bool {
         panic!("transaction not approvable");
     }
 
-    assert_signer(env, &treasury, &approver);
+    ensure_is_signer(&treasury, &approver);
     add_approval(&mut tx, &approver);
 
     let required = required_approvals_for_tx(&treasury, &tx);
@@ -302,8 +302,7 @@ pub fn execute_transaction(env: &Env, tx_id: u64, executor: Address) -> bool {
         panic!("treasury is paused");
     }
 
-    // require signer to execute
-    assert_signer(env, &treasury, &executor);
+    ensure_is_signer(&treasury, &executor);
 
     if !matches!(tx.status, TransactionStatus::Approved) {
         panic!("transaction must be approved");

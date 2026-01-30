@@ -56,6 +56,28 @@ fn add_admin(
     client.add_member(&guild_id, admin, &Role::Admin, owner);
 }
 
+fn create_treasury_with_funds(
+    client: &StellarGuildsContractClient<'_>,
+    env: &Env,
+    guild_id: u64,
+    owner: &Address,
+    amount: i128,
+) -> u64 {
+    let signer1 = Address::generate(env);
+    let signer2 = Address::generate(env);
+
+    env.mock_all_auths();
+
+    let mut signers = Vec::new(env);
+    signers.push_back(owner.clone());
+    signers.push_back(signer1.clone());
+    signers.push_back(signer2.clone());
+
+    let treasury_id = client.initialize_treasury(&guild_id, &signers, &2u32);
+    client.deposit_treasury(&treasury_id, owner, &amount, &None);
+    treasury_id
+}
+
 // ============ Project Creation Tests ============
 
 #[test]
@@ -444,6 +466,9 @@ fn test_approve_milestone_success() {
     let guild_id = setup_guild(&client, &env, &owner);
     add_admin(&client, &env, guild_id, &owner, &admin);
 
+    let treasury_id =
+        create_treasury_with_funds(&client, &env, guild_id, &owner, 5000i128);
+
     let now = env.ledger().timestamp();
     let mut milestones: Vec<MilestoneInput> = Vec::new(&env);
 
@@ -459,7 +484,7 @@ fn test_approve_milestone_success() {
         &contributor,
         &milestones,
         &1000i128,
-        &1u64,
+        &treasury_id,
         &None,
         &false,
     );
@@ -743,6 +768,8 @@ fn test_sequential_allows_second_after_first_approved() {
     let client = StellarGuildsContractClient::new(&env, &contract_id);
 
     let guild_id = setup_guild(&client, &env, &owner);
+    let treasury_id =
+        create_treasury_with_funds(&client, &env, guild_id, &owner, 5000i128);
 
     let now = env.ledger().timestamp();
     let mut milestones: Vec<MilestoneInput> = Vec::new(&env);
@@ -766,7 +793,7 @@ fn test_sequential_allows_second_after_first_approved() {
         &contributor,
         &milestones,
         &2000i128,
-        &1u64,
+        &treasury_id,
         &None,
         &true, // Sequential
     );
@@ -858,6 +885,8 @@ fn test_progress_calculation() {
     let client = StellarGuildsContractClient::new(&env, &contract_id);
 
     let guild_id = setup_guild(&client, &env, &owner);
+    let treasury_id =
+        create_treasury_with_funds(&client, &env, guild_id, &owner, 10000i128);
 
     let now = env.ledger().timestamp();
     let mut milestones: Vec<MilestoneInput> = Vec::new(&env);
@@ -895,7 +924,7 @@ fn test_progress_calculation() {
         &contributor,
         &milestones,
         &4000i128,
-        &1u64,
+        &treasury_id,
         &None,
         &false,
     );
