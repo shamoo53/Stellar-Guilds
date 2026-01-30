@@ -15,7 +15,9 @@ const mockPrisma = () => ({
   guildMembership: {
     create: jest.fn(),
     findUnique: jest.fn(),
+    findFirst: jest.fn(),
   },
+  user: { findUnique: jest.fn() },
 });
 
 describe('GuildService (settings integration)', () => {

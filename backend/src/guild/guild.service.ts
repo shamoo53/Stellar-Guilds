@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException, ConflictException, InternalServerErrorException } from '@nestjs/common';
 import { validateAndNormalizeSettings } from './guild.settings';
 import { PrismaService } from '../prisma/prisma.service';
+import { MailerService } from '../mailer/mailer.service';
 import { CreateGuildDto } from './dto/create-guild.dto';
 import { UpdateGuildDto } from './dto/update-guild.dto';
 import { InviteMemberDto } from './dto/invite-member.dto';
@@ -8,7 +9,7 @@ import { randomUUID } from 'crypto';
 
 @Injectable()
 export class GuildService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private mailer: MailerService) {}
 
   private slugify(name: string) {
     return name
@@ -151,26 +152,72 @@ export class GuildService {
 
   async inviteMember(guildId: string, dto: InviteMemberDto, invitedBy: string) {
     await this.ensureManagePermission(guildId, invitedBy);
-
-    const existing = await this.prisma.guildMembership.findUnique({
-      where: { userId_guildId: { userId: dto.userId, guildId } },
-    });
+    const existing = await this.prisma.guildMembership.findUnique({ where: { userId_guildId: { userId: dto.userId, guildId } } });
     if (existing) throw new BadRequestException('User already invited or member');
 
     const token = randomUUID();
 
-    const membership = await this.prisma.guildMembership.create({
-      data: {
-        userId: dto.userId,
-        guildId,
-        role: (dto.role as any) || 'MEMBER',
-        status: 'PENDING',
-        invitationToken: token,
-        invitedById: invitedBy,
-      },
-    });
+    const ttlDays = process.env.INVITE_TTL_DAYS ? Number(process.env.INVITE_TTL_DAYS) : 7;
+    const expiresAt = new Date(Date.now() + ttlDays * 24 * 60 * 60 * 1000);
+
+    const membership = await this.prisma.guildMembership.create({ data: {
+      userId: dto.userId,
+      guildId,
+      role: (dto.role as any) || 'MEMBER',
+      status: 'PENDING',
+      invitationToken: token,
+      invitedById: invitedBy,
+      invitationExpiresAt: expiresAt,
+    }});
+
+    // Try to send invite email to user if email is available
+    try {
+      const user = await this.prisma.user.findUnique({ where: { id: dto.userId } });
+      if (user?.email) {
+        const guild = await this.prisma.guild.findUnique({ where: { id: guildId } });
+        await this.mailer.sendInviteEmail(user.email, guild?.name || 'a guild', token, undefined);
+      }
+    } catch (err) {
+      // don't fail invite creation on email errors
+    }
 
     return { membership, token };
+  }
+
+  async revokeInviteByToken(guildId: string, token: string, revokedBy: string) {
+    const membership = await this.prisma.guildMembership.findFirst({ where: { guildId, invitationToken: token } });
+    if (!membership) throw new NotFoundException('Invite not found');
+
+    await this.ensureManagePermission(guildId, revokedBy);
+
+    const updated = await this.prisma.guildMembership.update({ where: { id: membership.id }, data: { status: 'REVOKED', invitationToken: null } });
+
+    // notify user
+    try {
+      const user = await this.prisma.user.findUnique({ where: { id: membership.userId } });
+      const guild = await this.prisma.guild.findUnique({ where: { id: guildId } });
+      if (user?.email) await this.mailer.sendRevokeEmail(user.email, guild?.name || 'a guild', undefined);
+    } catch (_) {}
+
+    return updated;
+  }
+
+  async revokeInviteForUser(guildId: string, userId: string, revokedBy: string) {
+    const membership = await this.prisma.guildMembership.findUnique({ where: { userId_guildId: { userId, guildId } } });
+    if (!membership) throw new NotFoundException('Invite not found');
+
+    // Only allow inviter or guild manager to revoke; or allow the user to cancel their own invite
+    if (revokedBy !== userId) await this.ensureManagePermission(guildId, revokedBy);
+
+    const updated = await this.prisma.guildMembership.update({ where: { id: membership.id }, data: { status: 'REVOKED', invitationToken: null } });
+
+    try {
+      const user = await this.prisma.user.findUnique({ where: { id: userId } });
+      const guild = await this.prisma.guild.findUnique({ where: { id: guildId } });
+      if (user?.email) await this.mailer.sendRevokeEmail(user.email, guild?.name || 'a guild', undefined);
+    } catch (_) {}
+
+    return updated;
   }
 
   async approveInviteByToken(guildId: string, token: string, approverId: string) {

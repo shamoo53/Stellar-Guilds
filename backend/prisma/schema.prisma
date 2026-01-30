@@ -113,6 +113,7 @@ model GuildMembership {
   status    MembershipStatus @default(APPROVED)
   invitationToken String?
   invitedById String?
+  invitationExpiresAt DateTime?
   role      GuildRole @default(MEMBER)
   userId    String
   guildId   String
@@ -123,6 +124,7 @@ model GuildMembership {
 
   invitedBy User? @relation(fields: [invitedById], references: [id])
 
+    REVOKED
   @@unique([userId, guildId])
   @@map("guild_memberships")
 }

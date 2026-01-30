@@ -70,6 +70,41 @@ export class GuildController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Post(':id/revoke')
+  @UseGuards(GuildRoleGuard)
+  @GuildRoles('MODERATOR', 'ADMIN', 'OWNER')
+  async revoke(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+    // body may contain token or userId
+    if (body.token) return this.guildService.revokeInviteByToken(id, body.token, req.user.userId);
+    if (body.userId) return this.guildService.revokeInviteForUser(id, body.userId, req.user.userId);
+    return { error: 'token or userId required' };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/resend-invite')
+  @UseGuards(GuildRoleGuard)
+  @GuildRoles('MODERATOR', 'ADMIN', 'OWNER')
+  async resendInvite(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+    // body must contain userId
+    const userId = body.userId;
+    if (!userId) return { error: 'userId required' };
+
+    const membership = await this.guildService['prisma'].guildMembership.findUnique({ where: { userId_guildId: { userId, guildId: id } } });
+    if (!membership) return { error: 'Invite not found' };
+    if (membership.status !== 'PENDING') return { error: 'Not a pending invite' };
+
+    // resend the invite token by email
+    const token = membership.invitationToken;
+    const user = await this.guildService['prisma'].user.findUnique({ where: { id: userId } });
+    const guild = await this.guildService['prisma'].guild.findUnique({ where: { id } });
+    if (user?.email && token) {
+      await (this.guildService as any).mailer.sendInviteEmail(user.email, guild?.name || 'a guild', token, undefined);
+      return { success: true };
+    }
+    return { error: 'No email or token to resend' };
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post(':id/approve')
   async approve(@Param('id') id: string, @Body() dto: ApproveInviteDto, @Request() req: any) {
     if (dto.token) return this.guildService.approveInviteByToken(id, dto.token, req.user.userId);
