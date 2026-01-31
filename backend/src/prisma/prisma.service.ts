@@ -1,4 +1,9 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+  Logger,
+} from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
 @Injectable()
@@ -50,6 +55,18 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
 
   get bounty() {
     return this.prisma.bounty;
+  }
+
+  get bountyApplication() {
+    return this.prisma.bountyApplication;
+  }
+
+  get bountyMilestone() {
+    return this.prisma.bountyMilestone;
+  }
+
+  get bountyPayout() {
+    return this.prisma.bountyPayout;
   }
 
   get role() {

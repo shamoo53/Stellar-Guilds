@@ -124,7 +124,7 @@ model GuildMembership {
 
   invitedBy User? @relation(fields: [invitedById], references: [id])
 
-    REVOKED
+  //  REVOKED
   @@unique([userId, guildId])
   @@map("guild_memberships")
 }
@@ -155,4 +155,56 @@ model Bounty {
   guild    Guild? @relation("GuildBounties", fields: [guildId], references: [id])
 
   @@map("bounties")
+}
+
+model BountyApplication {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  bountyId   String
+  applicantId String
+  message    String?
+  attachments Json?
+  status     String   @default("PENDING") // PENDING, ACCEPTED, REJECTED, WITHDRAWN
+  reviewerId String?
+  reviewMessage String?
+
+  bounty   Bounty @relation(fields: [bountyId], references: [id], onDelete: Cascade)
+  applicant User  @relation(fields: [applicantId], references: [id])
+
+  @@map("bounty_applications")
+}
+
+model BountyMilestone {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  bountyId   String
+  title      String
+  description String?
+  amount     Decimal
+  dueDate    DateTime?
+  status     String   @default("PENDING") // PENDING, COMPLETE, APPROVED, REJECTED
+  completedAt DateTime?
+
+  bounty Bounty @relation(fields: [bountyId], references: [id], onDelete: Cascade)
+
+  @@map("bounty_milestones")
+}
+
+model BountyPayout {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  bountyId   String
+  toUserId   String
+  amount     Decimal
+  token      String   @default("STELLAR")
+  txRef      String?
+  status     String   @default("PENDING") // PENDING, SENT, FAILED
+  processedAt DateTime?
+
+  bounty Bounty @relation(fields: [bountyId], references: [id], onDelete: Cascade)
+  toUser User   @relation(fields: [toUserId], references: [id])
+
+  @@map("bounty_payouts")
 }
