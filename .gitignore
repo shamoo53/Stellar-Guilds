@@ -20,6 +20,7 @@ contract/Cargo.lock
 
 # Testing
 **/coverage/
+contract/test_snapshots/
 
 # Production builds
 **/build/

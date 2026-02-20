@@ -25,6 +25,13 @@ use treasury::{
     propose_withdrawal as core_propose_withdrawal, set_budget as core_set_budget, Transaction,
 };
 
+mod analytics;
+use analytics::{
+    compute_budget_utilization, compute_category_breakdown, compute_forecast,
+    compute_spending_summary, compute_trend, get_snapshots, store_snapshot, BudgetUtilization,
+    CategoryBreakdown, SpendingForecast, SpendingSummary, SpendingTrend, TreasurySnapshot,
+};
+
 mod governance;
 use governance::{
     cancel_proposal as gov_cancel_proposal, create_proposal as gov_create_proposal,
@@ -731,6 +738,124 @@ impl StellarGuildsContract {
     /// `true` if pause state was changed successfully
     pub fn emergency_pause(env: Env, treasury_id: u64, signer: Address, paused: bool) -> bool {
         core_emergency_pause(&env, treasury_id, signer, paused)
+    }
+
+    // ============ Analytics Functions ============
+
+    /// Get spending summary for a treasury within a time range.
+    ///
+    /// # Arguments
+    /// * `treasury_id` - The treasury to analyze
+    /// * `period_start` - Start timestamp (unix seconds)
+    /// * `period_end` - End timestamp (unix seconds)
+    ///
+    /// # Returns
+    /// `SpendingSummary` with aggregated deposit/withdrawal totals
+    pub fn get_spending_summary(
+        env: Env,
+        treasury_id: u64,
+        period_start: u64,
+        period_end: u64,
+    ) -> SpendingSummary {
+        compute_spending_summary(&env, treasury_id, period_start, period_end)
+    }
+
+    /// Get budget utilization for all categories of a treasury.
+    ///
+    /// # Returns
+    /// `Vec<BudgetUtilization>` with allocated/spent/remaining per category
+    pub fn get_budget_utilization(env: Env, treasury_id: u64) -> Vec<BudgetUtilization> {
+        compute_budget_utilization(&env, treasury_id)
+    }
+
+    /// Get spending breakdown by transaction type for a time range.
+    ///
+    /// # Returns
+    /// `Vec<CategoryBreakdown>` grouped by transaction type
+    pub fn get_category_breakdown(
+        env: Env,
+        treasury_id: u64,
+        period_start: u64,
+        period_end: u64,
+    ) -> Vec<CategoryBreakdown> {
+        compute_category_breakdown(&env, treasury_id, period_start, period_end)
+    }
+
+    /// Compare spending between two time periods.
+    ///
+    /// # Returns
+    /// `SpendingTrend` with percentage changes in basis points
+    pub fn get_spending_trend(
+        env: Env,
+        treasury_id: u64,
+        p1_start: u64,
+        p1_end: u64,
+        p2_start: u64,
+        p2_end: u64,
+    ) -> SpendingTrend {
+        let period1 = compute_spending_summary(&env, treasury_id, p1_start, p1_end);
+        let period2 = compute_spending_summary(&env, treasury_id, p2_start, p2_end);
+        compute_trend(&env, &period1, &period2)
+    }
+
+    /// Forecast future spending using moving average of historical periods.
+    ///
+    /// # Arguments
+    /// * `num_periods` - Number of past periods to analyze
+    /// * `period_length_secs` - Length of each period in seconds
+    ///
+    /// # Returns
+    /// `SpendingForecast` with projected deposits/withdrawals
+    pub fn get_spending_forecast(
+        env: Env,
+        treasury_id: u64,
+        num_periods: u32,
+        period_length_secs: u64,
+    ) -> SpendingForecast {
+        let current_time = env.ledger().timestamp();
+        compute_forecast(&env, treasury_id, num_periods, period_length_secs, current_time)
+    }
+
+    /// Get recent treasury balance snapshots.
+    ///
+    /// # Arguments
+    /// * `limit` - Maximum number of snapshots to return
+    ///
+    /// # Returns
+    /// `Vec<TreasurySnapshot>` ordered oldest to newest
+    pub fn get_treasury_snapshots(
+        env: Env,
+        treasury_id: u64,
+        limit: u32,
+    ) -> Vec<TreasurySnapshot> {
+        get_snapshots(&env, treasury_id, limit)
+    }
+
+    /// Manually record a treasury snapshot (signer-only).
+    ///
+    /// # Returns
+    /// `true` if snapshot was recorded
+    pub fn record_treasury_snapshot(
+        env: Env,
+        treasury_id: u64,
+        caller: Address,
+    ) -> bool {
+        caller.require_auth();
+        let treasury = treasury::storage::get_treasury(&env, treasury_id)
+            .expect("treasury not found");
+        treasury::multisig::ensure_is_signer(&treasury, &caller);
+
+        let index = analytics::get_snapshot_count(&env, treasury_id);
+        let snapshot = TreasurySnapshot {
+            treasury_id,
+            timestamp: env.ledger().timestamp(),
+            balance_xlm: treasury.balance_xlm,
+            total_deposits: treasury.total_deposits,
+            total_withdrawals: treasury.total_withdrawals,
+            snapshot_index: index,
+        };
+        store_snapshot(&env, &snapshot);
+        true
     }
 
     // ============ Milestone Tracking Functions ============

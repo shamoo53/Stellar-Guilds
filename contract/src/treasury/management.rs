@@ -1,5 +1,8 @@
 use soroban_sdk::{token::Client as TokenClient, Address, Env, String, Symbol, Vec};
 
+use crate::analytics::storage::store_snapshot;
+use crate::analytics::types::TreasurySnapshot;
+
 use crate::treasury::multisig::{
     add_approval, assert_signer, ensure_is_signer, expire_if_needed, required_approvals_for_tx,
     validate_threshold, TX_EXPIRY_SECONDS,
@@ -121,6 +124,9 @@ pub fn deposit(
         reason: String::from_str(env, "deposit"),
     };
     store_transaction(env, &tx);
+
+    // Record analytics snapshot after deposit
+    record_snapshot(env, &treasury);
 
     let event = DepositEvent {
         treasury_id,
@@ -377,6 +383,10 @@ pub fn execute_transaction(env: &Env, tx_id: u64, executor: Address) -> bool {
     tx.status = TransactionStatus::Executed;
     store_transaction(env, &tx);
 
+    // Record analytics snapshot after execution
+    let updated_treasury = get_treasury(env, tx.treasury_id).expect("treasury not found");
+    record_snapshot(env, &updated_treasury);
+
     let event = TransactionExecutedEvent {
         treasury_id: tx.treasury_id,
         tx_id,
@@ -626,4 +636,20 @@ pub fn emergency_pause(env: &Env, treasury_id: u64, signer: Address, paused: boo
     );
 
     true
+}
+
+/// Record a point-in-time treasury snapshot for analytics tracking.
+fn record_snapshot(env: &Env, treasury: &Treasury) {
+    use crate::analytics::storage::get_snapshot_count;
+
+    let index = get_snapshot_count(env, treasury.id);
+    let snapshot = TreasurySnapshot {
+        treasury_id: treasury.id,
+        timestamp: env.ledger().timestamp(),
+        balance_xlm: treasury.balance_xlm,
+        total_deposits: treasury.total_deposits,
+        total_withdrawals: treasury.total_withdrawals,
+        snapshot_index: index,
+    };
+    store_snapshot(env, &snapshot);
 }
