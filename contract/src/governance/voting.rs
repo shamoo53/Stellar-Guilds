@@ -44,7 +44,8 @@ fn compute_total_weight_and_tallies(env: &Env, proposal: &Proposal) -> (i128, i1
 
     for member in members.iter() {
         let rep = resolve_delegate(env, proposal.guild_id, &member.address);
-        let weight = compute_governance_weight(env, &member.address, proposal.guild_id, &member.role);
+        let weight =
+            compute_governance_weight(env, &member.address, proposal.guild_id, &member.role);
 
         let decision_opt = if rep == member.address {
             votes_map.get(member.address.clone()).map(|v| v.decision)

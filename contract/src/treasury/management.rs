@@ -277,6 +277,7 @@ fn enforce_allowance(
     admin: &Address,
     token: &Option<Address>,
     amount: i128,
+    op_type: &crate::allowance::AllowanceOperation,
 ) -> Result<(), TreasuryError> {
     if amount <= 0 {
         return Ok(());
@@ -289,7 +290,18 @@ fn enforce_allowance(
         }
         allowance.remaining_amount -= amount;
         store_allowance(env, &allowance);
+        return Ok(());
     }
+
+    if let Some(treasury) = get_treasury(env, treasury_id) {
+        let result = crate::allowance::spend(env, admin, &treasury.owner, token, amount, op_type);
+        match result {
+            Ok(_) => return Ok(()),
+            Err(crate::allowance::AllowanceError::NotFound) => return Ok(()),
+            Err(_) => return Err(TreasuryError::AllowanceExceeded),
+        }
+    }
+
     Ok(())
 }
 
@@ -340,12 +352,30 @@ pub fn execute_transaction(env: &Env, tx_id: u64, executor: Address) -> bool {
                 TreasuryError::BudgetExceeded => panic!("budget exceeded"),
                 TreasuryError::AllowanceExceeded => panic!("allowance exceeded"),
             });
-            enforce_allowance(env, tx.treasury_id, &executor, &tx.token, tx.amount).unwrap_or_else(
-                |e| match e {
-                    TreasuryError::BudgetExceeded => panic!("budget exceeded"),
-                    TreasuryError::AllowanceExceeded => panic!("allowance exceeded"),
-                },
-            );
+
+            let op_type = match tx.tx_type {
+                TransactionType::Withdrawal => crate::allowance::AllowanceOperation::Withdrawal,
+                TransactionType::BountyFunding => {
+                    crate::allowance::AllowanceOperation::BountyFunding
+                }
+                TransactionType::MilestonePayment => {
+                    crate::allowance::AllowanceOperation::MilestonePayment
+                }
+                _ => crate::allowance::AllowanceOperation::Any,
+            };
+
+            enforce_allowance(
+                env,
+                tx.treasury_id,
+                &executor,
+                &tx.token,
+                tx.amount,
+                &op_type,
+            )
+            .unwrap_or_else(|e| match e {
+                TreasuryError::BudgetExceeded => panic!("budget exceeded"),
+                TreasuryError::AllowanceExceeded => panic!("allowance exceeded"),
+            });
 
             match tx.token {
                 Some(ref token_addr) => {
@@ -428,9 +458,12 @@ pub fn execute_milestone_payment(
     // Allowance enforcement (if any) keyed by current contract address;
     // if no allowance exists this is a no-op.
     let executor = env.current_contract_address();
-    enforce_allowance(env, treasury_id, &executor, &token, amount).unwrap_or_else(|e| match e {
-        TreasuryError::BudgetExceeded => panic!("budget exceeded"),
-        TreasuryError::AllowanceExceeded => panic!("allowance exceeded"),
+    let op_type = crate::allowance::AllowanceOperation::MilestonePayment;
+    enforce_allowance(env, treasury_id, &executor, &token, amount, &op_type).unwrap_or_else(|e| {
+        match e {
+            TreasuryError::BudgetExceeded => panic!("budget exceeded"),
+            TreasuryError::AllowanceExceeded => panic!("allowance exceeded"),
+        }
     });
 
     // Move funds from treasury to recipient

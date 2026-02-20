@@ -69,10 +69,7 @@ pub fn record_contribution(
         contribution_type,
     };
     env.events().publish(
-        (
-            Symbol::new(env, "reputation"),
-            Symbol::new(env, "updated"),
-        ),
+        (Symbol::new(env, "reputation"), Symbol::new(env, "updated")),
         event,
     );
 
@@ -124,12 +121,7 @@ pub fn get_decayed_profile(
 
 /// Compute governance weight: role_weight + integer_sqrt(decayed_score).
 /// Falls back to role_weight only if no reputation profile exists.
-pub fn compute_governance_weight(
-    env: &Env,
-    address: &Address,
-    guild_id: u64,
-    role: &Role,
-) -> i128 {
+pub fn compute_governance_weight(env: &Env, address: &Address, guild_id: u64, role: &Role) -> i128 {
     let base = role_weight(role);
 
     let reputation_bonus = match get_decayed_profile(env, address, guild_id) {
@@ -177,8 +169,12 @@ fn check_and_award_badges(
     }
 
     // BountyHunter — 5+ bounties completed
-    let bounty_count =
-        count_contributions_by_type(env, contributor, guild_id, &ContributionType::BountyCompleted);
+    let bounty_count = count_contributions_by_type(
+        env,
+        contributor,
+        guild_id,
+        &ContributionType::BountyCompleted,
+    );
     if bounty_count >= 5 {
         maybe_award_badge(
             env,
@@ -198,14 +194,7 @@ fn check_and_award_badges(
         &ContributionType::MilestoneApproved,
     );
     if milestone_count >= 10 {
-        maybe_award_badge(
-            env,
-            guild_id,
-            contributor,
-            BadgeType::Mentor,
-            "Mentor",
-            now,
-        );
+        maybe_award_badge(env, guild_id, contributor, BadgeType::Mentor, "Mentor", now);
     }
 
     // Governor — 10+ votes cast
@@ -267,10 +256,7 @@ fn maybe_award_badge(
         badge_name,
     };
     env.events().publish(
-        (
-            Symbol::new(env, "reputation"),
-            Symbol::new(env, "badge"),
-        ),
+        (Symbol::new(env, "reputation"), Symbol::new(env, "badge")),
         event,
     );
 }

@@ -12,9 +12,8 @@ const MAX_SNAPSHOTS_PER_TREASURY: u32 = 200;
 pub fn store_snapshot(env: &Env, snapshot: &TreasurySnapshot) {
     let storage = env.storage().persistent();
 
-    let mut all_snaps: Map<u64, Vec<TreasurySnapshot>> = storage
-        .get(&SNAPSHOTS_KEY)
-        .unwrap_or_else(|| Map::new(env));
+    let mut all_snaps: Map<u64, Vec<TreasurySnapshot>> =
+        storage.get(&SNAPSHOTS_KEY).unwrap_or_else(|| Map::new(env));
 
     let mut snaps = all_snaps
         .get(snapshot.treasury_id)
@@ -37,9 +36,7 @@ pub fn store_snapshot(env: &Env, snapshot: &TreasurySnapshot) {
     storage.set(&SNAPSHOTS_KEY, &all_snaps);
 
     // Update counter
-    let mut counts: Map<u64, u32> = storage
-        .get(&SNAP_CNT_KEY)
-        .unwrap_or_else(|| Map::new(env));
+    let mut counts: Map<u64, u32> = storage.get(&SNAP_CNT_KEY).unwrap_or_else(|| Map::new(env));
     let current = counts.get(snapshot.treasury_id).unwrap_or(0u32);
     counts.set(snapshot.treasury_id, current + 1);
     storage.set(&SNAP_CNT_KEY, &counts);
@@ -49,13 +46,10 @@ pub fn store_snapshot(env: &Env, snapshot: &TreasurySnapshot) {
 pub fn get_snapshots(env: &Env, treasury_id: u64, limit: u32) -> Vec<TreasurySnapshot> {
     let storage = env.storage().persistent();
 
-    let all_snaps: Map<u64, Vec<TreasurySnapshot>> = storage
-        .get(&SNAPSHOTS_KEY)
-        .unwrap_or_else(|| Map::new(env));
+    let all_snaps: Map<u64, Vec<TreasurySnapshot>> =
+        storage.get(&SNAPSHOTS_KEY).unwrap_or_else(|| Map::new(env));
 
-    let snaps = all_snaps
-        .get(treasury_id)
-        .unwrap_or_else(|| Vec::new(env));
+    let snaps = all_snaps.get(treasury_id).unwrap_or_else(|| Vec::new(env));
 
     let len = snaps.len();
     if len <= limit {
@@ -76,9 +70,7 @@ pub fn get_snapshots(env: &Env, treasury_id: u64, limit: u32) -> Vec<TreasurySna
 pub fn get_snapshot_count(env: &Env, treasury_id: u64) -> u32 {
     let storage = env.storage().persistent();
 
-    let counts: Map<u64, u32> = storage
-        .get(&SNAP_CNT_KEY)
-        .unwrap_or_else(|| Map::new(env));
+    let counts: Map<u64, u32> = storage.get(&SNAP_CNT_KEY).unwrap_or_else(|| Map::new(env));
 
     counts.get(treasury_id).unwrap_or(0u32)
 }

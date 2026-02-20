@@ -342,12 +342,8 @@ fn test_tier_upgrade() {
     let subscription_id = client.subscribe(&basic_plan_id, &subscriber, &true);
 
     // Upgrade to premium
-    let proration_amount = client.change_subscription_tier(
-        &subscription_id,
-        &premium_plan_id,
-        &true,
-        &subscriber,
-    );
+    let proration_amount =
+        client.change_subscription_tier(&subscription_id, &premium_plan_id, &true, &subscriber);
 
     // Should have proration amount for upgrade (charge)
     assert!(proration_amount >= 0);
@@ -392,12 +388,8 @@ fn test_tier_downgrade() {
     let subscription_id = client.subscribe(&premium_plan_id, &subscriber, &true);
 
     // Downgrade to basic
-    let proration_amount = client.change_subscription_tier(
-        &subscription_id,
-        &basic_plan_id,
-        &true,
-        &subscriber,
-    );
+    let proration_amount =
+        client.change_subscription_tier(&subscription_id, &basic_plan_id, &true, &subscriber);
 
     // Downgrade should have proration amount
     assert!(proration_amount >= 0);
@@ -494,8 +486,14 @@ fn test_days_until_billing() {
 fn test_billing_cycle_durations() {
     assert_eq!(BillingCycle::Weekly.duration_seconds(), 7 * 24 * 60 * 60);
     assert_eq!(BillingCycle::Monthly.duration_seconds(), 30 * 24 * 60 * 60);
-    assert_eq!(BillingCycle::Quarterly.duration_seconds(), 90 * 24 * 60 * 60);
-    assert_eq!(BillingCycle::Annually.duration_seconds(), 365 * 24 * 60 * 60);
+    assert_eq!(
+        BillingCycle::Quarterly.duration_seconds(),
+        90 * 24 * 60 * 60
+    );
+    assert_eq!(
+        BillingCycle::Annually.duration_seconds(),
+        365 * 24 * 60 * 60
+    );
 }
 
 #[test]

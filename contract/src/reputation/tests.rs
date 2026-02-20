@@ -93,12 +93,7 @@ mod tests {
             &ContributionType::MilestoneApproved,
             &2u64,
         );
-        client.record_contribution(
-            &guild_id,
-            &contributor,
-            &ContributionType::VoteCast,
-            &3u64,
-        );
+        client.record_contribution(&guild_id, &contributor, &ContributionType::VoteCast, &3u64);
 
         let profile = client.get_reputation(&guild_id, &contributor);
         // 100 (bounty) + 50 (milestone) + 5 (vote) = 155
@@ -199,12 +194,7 @@ mod tests {
         client.add_member(&guild_id, &contributor, &Role::Contributor, &owner);
 
         // First contribution should award "First Contribution" badge
-        client.record_contribution(
-            &guild_id,
-            &contributor,
-            &ContributionType::VoteCast,
-            &1u64,
-        );
+        client.record_contribution(&guild_id, &contributor, &ContributionType::VoteCast, &1u64);
 
         let badges = client.get_reputation_badges(&guild_id, &contributor);
         assert_eq!(badges.len(), 1);

@@ -2403,7 +2403,7 @@
             "data": {
               "vec": [
                 {
-                  "string": "caught panic 'only passed proposals can be executed' from contract function 'Symbol(obj#995)'"
+                  "string": "caught panic 'only passed proposals can be executed' from contract function 'Symbol(obj#1015)'"
                 },
                 {
                   "u64": 1

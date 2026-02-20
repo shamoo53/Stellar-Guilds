@@ -143,14 +143,8 @@ mod tests {
 
         // Propose + approve + execute withdrawal
         set_ledger_timestamp(&env, 3000);
-        let tx_id = client.propose_withdrawal(
-            &treasury_id,
-            &signer1,
-            &recipient,
-            &500i128,
-            &None,
-            &reason,
-        );
+        let tx_id =
+            client.propose_withdrawal(&treasury_id, &signer1, &recipient, &500i128, &None, &reason);
         client.approve_transaction(&tx_id, &signer2);
         client.execute_transaction(&tx_id, &owner);
 
@@ -185,14 +179,8 @@ mod tests {
 
         // Spend 300 of 1000 budget (= 30%)
         set_ledger_timestamp(&env, 1500);
-        let tx_id = client.propose_withdrawal(
-            &treasury_id,
-            &signer1,
-            &recipient,
-            &300i128,
-            &None,
-            &reason,
-        );
+        let tx_id =
+            client.propose_withdrawal(&treasury_id, &signer1, &recipient, &300i128, &None, &reason);
         client.approve_transaction(&tx_id, &signer2);
         client.execute_transaction(&tx_id, &owner);
 
@@ -257,13 +245,7 @@ mod tests {
         set_ledger_timestamp(&env, 5000);
         client.deposit_treasury(&treasury_id, &depositor, &2000i128, &None);
 
-        let trend = client.get_spending_trend(
-            &treasury_id,
-            &1500u64,
-            &3000u64,
-            &4000u64,
-            &6000u64,
-        );
+        let trend = client.get_spending_trend(&treasury_id, &1500u64, &3000u64, &4000u64, &6000u64);
 
         // Deposits went from 1000 to 2000 = +100% = +10000 bps
         assert_eq!(trend.deposits_change_bps, 10000);
@@ -298,11 +280,7 @@ mod tests {
 
         // Forecast from current time = 4000, 3 periods of 1000s each
         set_ledger_timestamp(&env, 4000);
-        let forecast = client.get_spending_forecast(
-            &treasury_id,
-            &3u32,
-            &1000u64,
-        );
+        let forecast = client.get_spending_forecast(&treasury_id, &3u32, &1000u64);
 
         // Average deposits = (1000 + 2000 + 3000) / 3 = 2000
         assert_eq!(forecast.projected_deposits, 2000);
@@ -344,7 +322,7 @@ mod tests {
         assert_eq!(first.total_deposits, 100);
 
         let last = snapshots.get(2).unwrap();
-        assert_eq!(last.balance_xlm, 600);  // 100 + 200 + 300
+        assert_eq!(last.balance_xlm, 600); // 100 + 200 + 300
         assert_eq!(last.total_deposits, 600);
     }
 

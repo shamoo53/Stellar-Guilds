@@ -18,10 +18,10 @@ impl BillingCycle {
     /// Get the duration in seconds for each billing cycle
     pub fn duration_seconds(&self) -> u64 {
         match self {
-            BillingCycle::Weekly => 7 * 24 * 60 * 60,      // 604,800 seconds
-            BillingCycle::Monthly => 30 * 24 * 60 * 60,    // 2,592,000 seconds
-            BillingCycle::Quarterly => 90 * 24 * 60 * 60,  // 7,776,000 seconds
-            BillingCycle::Annually => 365 * 24 * 60 * 60,  // 31,536,000 seconds
+            BillingCycle::Weekly => 7 * 24 * 60 * 60, // 604,800 seconds
+            BillingCycle::Monthly => 30 * 24 * 60 * 60, // 2,592,000 seconds
+            BillingCycle::Quarterly => 90 * 24 * 60 * 60, // 7,776,000 seconds
+            BillingCycle::Annually => 365 * 24 * 60 * 60, // 31,536,000 seconds
         }
     }
 }

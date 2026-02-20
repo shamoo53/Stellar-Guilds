@@ -8,9 +8,7 @@ pub use scoring::{
 
 pub use storage::{get_badges, get_contributions};
 
-pub use types::{
-    Badge, BadgeType, ContributionRecord, ContributionType, ReputationProfile,
-};
+pub use types::{Badge, BadgeType, ContributionRecord, ContributionType, ReputationProfile};
 
 #[cfg(test)]
 mod tests;

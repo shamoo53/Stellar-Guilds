@@ -6,7 +6,7 @@ use crate::subscription::storage::{
 };
 use crate::subscription::types::{
     GracePeriodStartedEvent, MembershipTier, PaymentProcessedEvent, PlanCreatedEvent,
-    ProrationResult, RevenueRecordedEvent, RevenueRecord, RetryConfig, Subscription,
+    ProrationResult, RetryConfig, RevenueRecord, RevenueRecordedEvent, Subscription,
     SubscriptionCancelledEvent, SubscriptionChange, SubscriptionCreatedEvent, SubscriptionError,
     SubscriptionPlan, SubscriptionStatus, TierChangedEvent,
 };
@@ -167,11 +167,10 @@ pub fn process_payment(
     subscription_id: u64,
     retry_attempt: u32,
 ) -> Result<bool, SubscriptionError> {
-    let mut subscription = get_subscription(env, subscription_id)
-        .ok_or(SubscriptionError::SubscriptionNotFound)?;
+    let mut subscription =
+        get_subscription(env, subscription_id).ok_or(SubscriptionError::SubscriptionNotFound)?;
 
-    let plan = get_plan(env, subscription.plan_id)
-        .ok_or(SubscriptionError::PlanNotFound)?;
+    let plan = get_plan(env, subscription.plan_id).ok_or(SubscriptionError::PlanNotFound)?;
 
     // Only process active or grace period subscriptions
     if subscription.status != SubscriptionStatus::Active
@@ -353,8 +352,8 @@ pub fn pause_subscription(
     subscription_id: u64,
     caller: Address,
 ) -> Result<bool, SubscriptionError> {
-    let mut subscription = get_subscription(env, subscription_id)
-        .ok_or(SubscriptionError::SubscriptionNotFound)?;
+    let mut subscription =
+        get_subscription(env, subscription_id).ok_or(SubscriptionError::SubscriptionNotFound)?;
 
     // Only subscriber can pause their own subscription
     if subscription.subscriber != caller {
@@ -386,8 +385,8 @@ pub fn resume_subscription(
     subscription_id: u64,
     caller: Address,
 ) -> Result<bool, SubscriptionError> {
-    let mut subscription = get_subscription(env, subscription_id)
-        .ok_or(SubscriptionError::SubscriptionNotFound)?;
+    let mut subscription =
+        get_subscription(env, subscription_id).ok_or(SubscriptionError::SubscriptionNotFound)?;
 
     // Only subscriber can resume their own subscription
     if subscription.subscriber != caller {
@@ -398,8 +397,7 @@ pub fn resume_subscription(
         return Err(SubscriptionError::InvalidState);
     }
 
-    let plan = get_plan(env, subscription.plan_id)
-        .ok_or(SubscriptionError::PlanNotFound)?;
+    let plan = get_plan(env, subscription.plan_id).ok_or(SubscriptionError::PlanNotFound)?;
 
     subscription.status = SubscriptionStatus::Active;
 
@@ -430,8 +428,8 @@ pub fn cancel_subscription(
     caller: Address,
     reason: Option<String>,
 ) -> Result<bool, SubscriptionError> {
-    let mut subscription = get_subscription(env, subscription_id)
-        .ok_or(SubscriptionError::SubscriptionNotFound)?;
+    let mut subscription =
+        get_subscription(env, subscription_id).ok_or(SubscriptionError::SubscriptionNotFound)?;
 
     // Only subscriber can cancel their own subscription
     if subscription.subscriber != caller {
@@ -478,8 +476,8 @@ pub fn change_tier(
     change: SubscriptionChange,
     caller: Address,
 ) -> Result<Option<ProrationResult>, SubscriptionError> {
-    let mut subscription = get_subscription(env, subscription_id)
-        .ok_or(SubscriptionError::SubscriptionNotFound)?;
+    let mut subscription =
+        get_subscription(env, subscription_id).ok_or(SubscriptionError::SubscriptionNotFound)?;
 
     // Only subscriber can change their tier
     if subscription.subscriber != caller {
@@ -492,11 +490,10 @@ pub fn change_tier(
         return Err(SubscriptionError::InvalidState);
     }
 
-    let current_plan = get_plan(env, subscription.plan_id)
-        .ok_or(SubscriptionError::PlanNotFound)?;
+    let current_plan =
+        get_plan(env, subscription.plan_id).ok_or(SubscriptionError::PlanNotFound)?;
 
-    let new_plan = get_plan(env, change.new_plan_id)
-        .ok_or(SubscriptionError::PlanNotFound)?;
+    let new_plan = get_plan(env, change.new_plan_id).ok_or(SubscriptionError::PlanNotFound)?;
 
     // Validate tier change direction
     let is_upgrade = new_plan.tier > current_plan.tier;
@@ -572,8 +569,8 @@ pub fn change_tier(
 /// # Returns
 /// true if payment was successful
 pub fn retry_payment(env: &Env, subscription_id: u64) -> Result<bool, SubscriptionError> {
-    let subscription = get_subscription(env, subscription_id)
-        .ok_or(SubscriptionError::SubscriptionNotFound)?;
+    let subscription =
+        get_subscription(env, subscription_id).ok_or(SubscriptionError::SubscriptionNotFound)?;
 
     if subscription.status != SubscriptionStatus::GracePeriod {
         return Err(SubscriptionError::NotInGracePeriod);

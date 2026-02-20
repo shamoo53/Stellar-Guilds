@@ -77,10 +77,10 @@ use subscription::{
     is_subscription_active as sub_is_subscription_active,
     pause_subscription as sub_pause_subscription,
     process_due_subscriptions as sub_process_due_subscriptions,
-    process_payment as sub_process_payment, retry_payment as sub_retry_payment,
-    resume_subscription as sub_resume_subscription, subscribe as sub_subscribe,
-    BillingCycle, MembershipTier, ProrationResult, Subscription, SubscriptionChange,
-    SubscriptionError, SubscriptionPlan, SubscriptionStatus,
+    process_payment as sub_process_payment, resume_subscription as sub_resume_subscription,
+    retry_payment as sub_retry_payment, subscribe as sub_subscribe, BillingCycle, MembershipTier,
+    ProrationResult, Subscription, SubscriptionChange, SubscriptionError, SubscriptionPlan,
+    SubscriptionStatus,
 };
 
 mod dispute;
@@ -89,6 +89,14 @@ use dispute::{
     create_dispute as dispute_create_dispute, execute_resolution as dispute_execute_resolution,
     resolve_dispute as dispute_resolve_dispute, submit_evidence as dispute_submit_evidence,
     tally_votes as dispute_tally_votes,
+};
+
+mod allowance;
+use allowance::{
+    approve as allowance_approve, decrease_allowance as allowance_decrease,
+    get_allowance_detail as allowance_get, get_owner_allowances as allowance_list_owner,
+    get_spender_allowances as allowance_list_spender, increase_allowance as allowance_increase,
+    revoke as allowance_revoke, AllowanceOperation, TokenAllowance,
 };
 
 mod multisig;
@@ -748,6 +756,119 @@ impl StellarGuildsContract {
         core_emergency_pause(&env, treasury_id, signer, paused)
     }
 
+    // ============ Token Allowance Functions ============
+
+    /// Approve a token allowance from owner to spender.
+    ///
+    /// Creates or replaces an allowance with optional expiration and
+    /// per-operation granularity.
+    ///
+    /// # Arguments
+    /// * `owner` - Address granting the allowance (requires auth)
+    /// * `spender` - Address permitted to spend
+    /// * `token` - Token address (None for XLM)
+    /// * `amount` - Maximum spendable amount
+    /// * `expires_at` - Ledger timestamp expiry (0 = no expiry)
+    /// * `operation` - Operation type filter
+    pub fn approve_token_allowance(
+        env: Env,
+        owner: Address,
+        spender: Address,
+        token: Option<Address>,
+        amount: i128,
+        expires_at: u64,
+        operation: AllowanceOperation,
+    ) -> bool {
+        allowance_approve(&env, owner, spender, token, amount, expires_at, operation)
+            .unwrap_or_else(|e| {
+                let msg = match e {
+                    allowance::AllowanceError::InvalidAmount => "invalid amount",
+                    allowance::AllowanceError::Expired => "already expired",
+                    _ => "allowance error",
+                };
+                panic!("{}", msg);
+            });
+        true
+    }
+
+    /// Atomically increase an existing allowance.
+    pub fn increase_token_allowance(
+        env: Env,
+        owner: Address,
+        spender: Address,
+        token: Option<Address>,
+        delta: i128,
+    ) -> bool {
+        allowance_increase(&env, owner, spender, token, delta).unwrap_or_else(|e| {
+            let msg = match e {
+                allowance::AllowanceError::NotFound => "allowance not found",
+                allowance::AllowanceError::Expired => "allowance expired",
+                allowance::AllowanceError::InvalidAmount => "invalid amount",
+                _ => "allowance error",
+            };
+            panic!("{}", msg);
+        });
+        true
+    }
+
+    /// Atomically decrease an existing allowance.
+    pub fn decrease_token_allowance(
+        env: Env,
+        owner: Address,
+        spender: Address,
+        token: Option<Address>,
+        delta: i128,
+    ) -> bool {
+        allowance_decrease(&env, owner, spender, token, delta).unwrap_or_else(|e| {
+            let msg = match e {
+                allowance::AllowanceError::NotFound => "allowance not found",
+                allowance::AllowanceError::Expired => "allowance expired",
+                allowance::AllowanceError::InvalidAmount => "invalid amount",
+                _ => "allowance error",
+            };
+            panic!("{}", msg);
+        });
+        true
+    }
+
+    /// Revoke (delete) a token allowance.
+    pub fn revoke_token_allowance(
+        env: Env,
+        owner: Address,
+        spender: Address,
+        token: Option<Address>,
+    ) -> bool {
+        allowance_revoke(&env, owner, spender, token).unwrap_or_else(|e| {
+            let msg = match e {
+                allowance::AllowanceError::NotFound => "allowance not found",
+                _ => "allowance error",
+            };
+            panic!("{}", msg);
+        });
+        true
+    }
+
+    /// Get allowance details for a specific (owner, spender, token) triple.
+    pub fn get_token_allowance(
+        env: Env,
+        owner: Address,
+        spender: Address,
+        token: Option<Address>,
+    ) -> TokenAllowance {
+        allowance_get(&env, &owner, &spender, &token)
+            .unwrap_or_else(|| panic!("allowance not found"))
+    }
+
+    /// List all allowances granted by an owner.
+    pub fn get_owner_allowances(env: Env, owner: Address) -> Vec<TokenAllowance> {
+        allowance_list_owner(&env, &owner)
+    }
+
+    /// List all allowances where the given address is the spender.
+    pub fn get_spender_allowances(env: Env, spender: Address) -> Vec<TokenAllowance> {
+        allowance_list_spender(&env, &spender)
+    }
+
     // ============ Analytics Functions ============
 
     /// Get spending summary for a treasury within a time range.
@@ -821,7 +942,13 @@ impl StellarGuildsContract {
         period_length_secs: u64,
     ) -> SpendingForecast {
         let current_time = env.ledger().timestamp();
-        compute_forecast(&env, treasury_id, num_periods, period_length_secs, current_time)
+        compute_forecast(
+            &env,
+            treasury_id,
+            num_periods,
+            period_length_secs,
+            current_time,
+        )
     }
 
     /// Get recent treasury balance snapshots.
@@ -831,11 +958,7 @@ impl StellarGuildsContract {
     ///
     /// # Returns
     /// `Vec<TreasurySnapshot>` ordered oldest to newest
-    pub fn get_treasury_snapshots(
-        env: Env,
-        treasury_id: u64,
-        limit: u32,
-    ) -> Vec<TreasurySnapshot> {
+    pub fn get_treasury_snapshots(env: Env, treasury_id: u64, limit: u32) -> Vec<TreasurySnapshot> {
         get_snapshots(&env, treasury_id, limit)
     }
 
@@ -843,14 +966,10 @@ impl StellarGuildsContract {
     ///
     /// # Returns
     /// `true` if snapshot was recorded
-    pub fn record_treasury_snapshot(
-        env: Env,
-        treasury_id: u64,
-        caller: Address,
-    ) -> bool {
+    pub fn record_treasury_snapshot(env: Env, treasury_id: u64, caller: Address) -> bool {
         caller.require_auth();
-        let treasury = treasury::storage::get_treasury(&env, treasury_id)
-            .expect("treasury not found");
+        let treasury =
+            treasury::storage::get_treasury(&env, treasury_id).expect("treasury not found");
         treasury::multisig::ensure_is_signer(&treasury, &caller);
 
         let index = analytics::get_snapshot_count(&env, treasury_id);
@@ -878,15 +997,17 @@ impl StellarGuildsContract {
         reference_id: u64,
     ) {
         contributor.require_auth();
-        rep_record_contribution(&env, guild_id, &contributor, contribution_type, reference_id);
+        rep_record_contribution(
+            &env,
+            guild_id,
+            &contributor,
+            contribution_type,
+            reference_id,
+        );
     }
 
     /// Get a user's reputation profile for a specific guild (with decay applied).
-    pub fn get_reputation(
-        env: Env,
-        guild_id: u64,
-        address: Address,
-    ) -> ReputationProfile {
+    pub fn get_reputation(env: Env, guild_id: u64, address: Address) -> ReputationProfile {
         get_decayed_profile(&env, &address, guild_id)
             .unwrap_or_else(|| panic!("no reputation profile found"))
     }
@@ -907,20 +1028,12 @@ impl StellarGuildsContract {
     }
 
     /// Get badges earned by a user in a guild.
-    pub fn get_reputation_badges(
-        env: Env,
-        guild_id: u64,
-        address: Address,
-    ) -> Vec<Badge> {
+    pub fn get_reputation_badges(env: Env, guild_id: u64, address: Address) -> Vec<Badge> {
         rep_get_badges(&env, &address, guild_id)
     }
 
     /// Get computed governance weight for a user (role + reputation).
-    pub fn get_governance_weight_for(
-        env: Env,
-        guild_id: u64,
-        address: Address,
-    ) -> i128 {
+    pub fn get_governance_weight_for(env: Env, guild_id: u64, address: Address) -> i128 {
         let member = guild::storage::get_member(&env, guild_id, &address)
             .unwrap_or_else(|| panic!("not a guild member"));
         rep_governance_weight(&env, &address, guild_id, &member.role)

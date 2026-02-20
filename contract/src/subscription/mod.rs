@@ -35,13 +35,12 @@ pub mod types;
 /// - Subscription upgrade/downgrade with proration
 /// - Pause/resume functionality
 /// - Auto-renewal management
-
 // Re-export main types
 pub use types::{
-    BillingCycle, GracePeriodStartedEvent, MembershipTier, PaymentProcessedEvent,
-    PlanCreatedEvent, ProrationResult, RevenueRecord, RevenueRecordedEvent, RetryConfig,
-    Subscription, SubscriptionCancelledEvent, SubscriptionChange, SubscriptionCreatedEvent,
-    SubscriptionError, SubscriptionPlan, SubscriptionStatus, TierChangedEvent,
+    BillingCycle, GracePeriodStartedEvent, MembershipTier, PaymentProcessedEvent, PlanCreatedEvent,
+    ProrationResult, RetryConfig, RevenueRecord, RevenueRecordedEvent, Subscription,
+    SubscriptionCancelledEvent, SubscriptionChange, SubscriptionCreatedEvent, SubscriptionError,
+    SubscriptionPlan, SubscriptionStatus, TierChangedEvent,
 };
 
 // Re-export storage functions
@@ -54,9 +53,9 @@ pub use storage::{
 
 // Re-export lifecycle functions
 pub use lifecycle::{
-    cancel_subscription, change_tier, create_plan, days_until_billing, is_subscription_active,
-    pause_subscription, process_due_subscriptions, process_payment, retry_payment,
-    resume_subscription, subscribe, get_subscription_status,
+    cancel_subscription, change_tier, create_plan, days_until_billing, get_subscription_status,
+    is_subscription_active, pause_subscription, process_due_subscriptions, process_payment,
+    resume_subscription, retry_payment, subscribe,
 };
 
 #[cfg(test)]

@@ -1,5 +1,5 @@
 use crate::subscription::types::{
-    BillingCycle, MembershipTier, RevenueRecord, RetryConfig, Subscription, SubscriptionPlan,
+    BillingCycle, MembershipTier, RetryConfig, RevenueRecord, Subscription, SubscriptionPlan,
 };
 use soroban_sdk::{contracttype, Address, Env, Map, Vec};
 
@@ -47,7 +47,10 @@ pub fn initialize_subscription_storage(env: &Env) {
     }
 
     if !storage.has(&SubscriptionStorageKey::RetryConfig) {
-        storage.set(&SubscriptionStorageKey::RetryConfig, &RetryConfig::default());
+        storage.set(
+            &SubscriptionStorageKey::RetryConfig,
+            &RetryConfig::default(),
+        );
     }
 }
 
@@ -127,7 +130,10 @@ pub fn get_user_subscription(
 ) -> Option<Subscription> {
     env.storage()
         .persistent()
-        .get(&SubscriptionStorageKey::UserSubscription(subscriber.clone(), guild_id))
+        .get(&SubscriptionStorageKey::UserSubscription(
+            subscriber.clone(),
+            guild_id,
+        ))
         .and_then(|sub_id: u64| get_subscription(env, sub_id))
 }
 
@@ -212,10 +218,9 @@ pub fn remove_active_subscription(env: &Env, subscription_id: u64) {
 
 /// Store a revenue record
 pub fn store_revenue_record(env: &Env, record: &RevenueRecord) {
-    env.storage().persistent().set(
-        &SubscriptionStorageKey::RevenueRecord(record.id),
-        record,
-    );
+    env.storage()
+        .persistent()
+        .set(&SubscriptionStorageKey::RevenueRecord(record.id), record);
 }
 
 /// Get a revenue record by ID

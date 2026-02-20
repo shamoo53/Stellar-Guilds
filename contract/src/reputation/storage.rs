@@ -15,31 +15,25 @@ const BADGE_CNT: Symbol = symbol_short!("r_bcnt");
 /// Store or update a reputation profile keyed by (address, guild_id).
 pub fn store_profile(env: &Env, profile: &ReputationProfile) {
     let storage = env.storage().persistent();
-    let mut profiles: Map<(Address, u64), ReputationProfile> = storage
-        .get(&PROFILES_KEY)
-        .unwrap_or_else(|| Map::new(env));
-    profiles.set(
-        (profile.address.clone(), profile.guild_id),
-        profile.clone(),
-    );
+    let mut profiles: Map<(Address, u64), ReputationProfile> =
+        storage.get(&PROFILES_KEY).unwrap_or_else(|| Map::new(env));
+    profiles.set((profile.address.clone(), profile.guild_id), profile.clone());
     storage.set(&PROFILES_KEY, &profiles);
 }
 
 /// Get a reputation profile for (address, guild_id). Returns None if not found.
 pub fn get_profile(env: &Env, address: &Address, guild_id: u64) -> Option<ReputationProfile> {
     let storage = env.storage().persistent();
-    let profiles: Map<(Address, u64), ReputationProfile> = storage
-        .get(&PROFILES_KEY)
-        .unwrap_or_else(|| Map::new(env));
+    let profiles: Map<(Address, u64), ReputationProfile> =
+        storage.get(&PROFILES_KEY).unwrap_or_else(|| Map::new(env));
     profiles.get((address.clone(), guild_id))
 }
 
 /// Get all guild IDs that an address has reputation in.
 pub fn get_all_guild_profiles(env: &Env, address: &Address) -> Vec<ReputationProfile> {
     let storage = env.storage().persistent();
-    let profiles: Map<(Address, u64), ReputationProfile> = storage
-        .get(&PROFILES_KEY)
-        .unwrap_or_else(|| Map::new(env));
+    let profiles: Map<(Address, u64), ReputationProfile> =
+        storage.get(&PROFILES_KEY).unwrap_or_else(|| Map::new(env));
 
     let mut result = Vec::new(env);
     for entry in profiles.iter() {
@@ -66,16 +60,14 @@ pub fn store_contribution(env: &Env, record: &ContributionRecord) {
     let storage = env.storage().persistent();
 
     // Store by ID
-    let mut contribs: Map<u64, ContributionRecord> = storage
-        .get(&CONTRIBS_KEY)
-        .unwrap_or_else(|| Map::new(env));
+    let mut contribs: Map<u64, ContributionRecord> =
+        storage.get(&CONTRIBS_KEY).unwrap_or_else(|| Map::new(env));
     contribs.set(record.id, record.clone());
     storage.set(&CONTRIBS_KEY, &contribs);
 
     // Update per-user per-guild index
-    let mut index: Map<(Address, u64), Vec<u64>> = storage
-        .get(&CONTRIB_IDX)
-        .unwrap_or_else(|| Map::new(env));
+    let mut index: Map<(Address, u64), Vec<u64>> =
+        storage.get(&CONTRIB_IDX).unwrap_or_else(|| Map::new(env));
     let key = (record.contributor.clone(), record.guild_id);
     let mut ids = index.get(key.clone()).unwrap_or_else(|| Vec::new(env));
     ids.push_back(record.id);
@@ -92,17 +84,15 @@ pub fn get_contributions(
 ) -> Vec<ContributionRecord> {
     let storage = env.storage().persistent();
 
-    let index: Map<(Address, u64), Vec<u64>> = storage
-        .get(&CONTRIB_IDX)
-        .unwrap_or_else(|| Map::new(env));
+    let index: Map<(Address, u64), Vec<u64>> =
+        storage.get(&CONTRIB_IDX).unwrap_or_else(|| Map::new(env));
 
     let ids = index
         .get((address.clone(), guild_id))
         .unwrap_or_else(|| Vec::new(env));
 
-    let contribs: Map<u64, ContributionRecord> = storage
-        .get(&CONTRIBS_KEY)
-        .unwrap_or_else(|| Map::new(env));
+    let contribs: Map<u64, ContributionRecord> =
+        storage.get(&CONTRIBS_KEY).unwrap_or_else(|| Map::new(env));
 
     let mut result = Vec::new(env);
     let len = ids.len();
@@ -126,17 +116,15 @@ pub fn count_contributions_by_type(
 ) -> u32 {
     let storage = env.storage().persistent();
 
-    let index: Map<(Address, u64), Vec<u64>> = storage
-        .get(&CONTRIB_IDX)
-        .unwrap_or_else(|| Map::new(env));
+    let index: Map<(Address, u64), Vec<u64>> =
+        storage.get(&CONTRIB_IDX).unwrap_or_else(|| Map::new(env));
 
     let ids = index
         .get((address.clone(), guild_id))
         .unwrap_or_else(|| Vec::new(env));
 
-    let contribs: Map<u64, ContributionRecord> = storage
-        .get(&CONTRIBS_KEY)
-        .unwrap_or_else(|| Map::new(env));
+    let contribs: Map<u64, ContributionRecord> =
+        storage.get(&CONTRIBS_KEY).unwrap_or_else(|| Map::new(env));
 
     let mut count = 0u32;
     for id in ids.iter() {
@@ -163,16 +151,13 @@ pub fn get_next_badge_id(env: &Env) -> u64 {
 pub fn store_badge(env: &Env, badge: &Badge) {
     let storage = env.storage().persistent();
 
-    let mut badges: Map<u64, Badge> = storage
-        .get(&BADGES_KEY)
-        .unwrap_or_else(|| Map::new(env));
+    let mut badges: Map<u64, Badge> = storage.get(&BADGES_KEY).unwrap_or_else(|| Map::new(env));
     badges.set(badge.id, badge.clone());
     storage.set(&BADGES_KEY, &badges);
 
     // Per-user per-guild index
-    let mut index: Map<(Address, u64), Vec<u64>> = storage
-        .get(&BADGE_IDX)
-        .unwrap_or_else(|| Map::new(env));
+    let mut index: Map<(Address, u64), Vec<u64>> =
+        storage.get(&BADGE_IDX).unwrap_or_else(|| Map::new(env));
     let key = (badge.holder.clone(), badge.guild_id);
     let mut ids = index.get(key.clone()).unwrap_or_else(|| Vec::new(env));
     ids.push_back(badge.id);
@@ -184,17 +169,14 @@ pub fn store_badge(env: &Env, badge: &Badge) {
 pub fn get_badges(env: &Env, address: &Address, guild_id: u64) -> Vec<Badge> {
     let storage = env.storage().persistent();
 
-    let index: Map<(Address, u64), Vec<u64>> = storage
-        .get(&BADGE_IDX)
-        .unwrap_or_else(|| Map::new(env));
+    let index: Map<(Address, u64), Vec<u64>> =
+        storage.get(&BADGE_IDX).unwrap_or_else(|| Map::new(env));
 
     let ids = index
         .get((address.clone(), guild_id))
         .unwrap_or_else(|| Vec::new(env));
 
-    let badges: Map<u64, Badge> = storage
-        .get(&BADGES_KEY)
-        .unwrap_or_else(|| Map::new(env));
+    let badges: Map<u64, Badge> = storage.get(&BADGES_KEY).unwrap_or_else(|| Map::new(env));
 
     let mut result = Vec::new(env);
     for id in ids.iter() {
