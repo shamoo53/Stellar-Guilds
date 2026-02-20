@@ -15,7 +15,7 @@ use crate::dispute::storage as dispute_storage;
 use crate::dispute::types::DisputeReference;
 use crate::treasury::execute_milestone_payment;
 
-fn assert_project_active(project: &Project, env: &Env) {
+fn assert_project_active(project: &Project, _env: &Env) {
     if project.status != ProjectStatus::Active {
         panic!("project is not active");
     }

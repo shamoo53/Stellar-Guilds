@@ -149,7 +149,7 @@ pub fn propose_withdrawal(
         panic!("amount must be positive");
     }
 
-    let mut treasury = get_treasury(env, treasury_id).expect("treasury not found");
+    let treasury = get_treasury(env, treasury_id).expect("treasury not found");
     if treasury.paused {
         panic!("treasury is paused");
     }
@@ -197,7 +197,7 @@ pub fn approve_transaction(env: &Env, tx_id: u64, approver: Address) -> bool {
     approver.require_auth();
 
     let mut tx = crate::treasury::storage::get_transaction(env, tx_id).expect("tx not found");
-    let mut treasury = get_treasury(env, tx.treasury_id).expect("treasury not found");
+    let treasury = get_treasury(env, tx.treasury_id).expect("treasury not found");
 
     let now = env.ledger().timestamp();
     expire_if_needed(&mut tx, now);

@@ -1,5 +1,7 @@
 #![no_std]
 
+#![allow(dead_code, unused_variables, unused_imports, unused_mut)]
+
 use soroban_sdk::{contract, contractimpl, Address, Env, String, Vec};
 
 mod guild;
@@ -14,11 +16,10 @@ use guild::types::{Member, Role};
 mod bounty;
 use bounty::{
     approve_completion, cancel_bounty, claim_bounty, create_bounty, expire_bounty, fund_bounty,
-    get_bounty_data, get_guild_bounties_list, release_escrow, submit_work, Bounty, BountyStatus,
+    get_bounty_data, get_guild_bounties_list, release_escrow, submit_work, Bounty,
 };
 
 mod treasury;
-use treasury::initialize_treasury_storage;
 use treasury::{
     approve_transaction as core_approve_transaction, deposit as core_deposit,
     emergency_pause as core_emergency_pause, execute_transaction as core_execute_transaction,
@@ -44,8 +45,7 @@ use milestone::{
     extend_milestone_deadline as ms_extend_deadline, get_milestone_view as ms_get_milestone,
     get_project_progress as ms_get_progress, reject_milestone as ms_reject_milestone,
     release_milestone_payment as ms_release_payment, start_milestone as ms_start_milestone,
-    submit_milestone as ms_submit_milestone, Milestone, MilestoneInput, MilestoneStatus, Project,
-    ProjectStatus,
+    submit_milestone as ms_submit_milestone, Milestone, MilestoneInput,
 };
 
 mod payment;
@@ -64,6 +64,13 @@ use dispute::{
     resolve_dispute as dispute_resolve_dispute, submit_evidence as dispute_submit_evidence,
     tally_votes as dispute_tally_votes,
 };
+
+mod upgrade;
+use upgrade::{
+    VersionInfo, UpgradeType, UpgradeProposal, SimulationResult,
+};
+
+mod module_integration;
 
 /// Stellar Guilds - Main Contract Entry Point
 ///
@@ -1154,6 +1161,168 @@ impl StellarGuildsContract {
     /// Vector of all bounties belonging to the guild
     pub fn get_guild_bounties(env: Env, guild_id: u64) -> Vec<Bounty> {
         get_guild_bounties_list(&env, guild_id)
+    }
+
+    // ============ Upgrade Management Functions ============
+
+    /// Propose a contract upgrade
+    ///
+    /// # Arguments
+    /// * `from_version` - Current version
+    /// * `to_version` - Target version
+    /// * `upgrade_type` - Type of upgrade (CodeOnly, WithMigration, Emergency, SecurityFix)
+    /// * `new_code` - WASM bytes of new contract code
+    /// * `description` - Description of changes
+    /// * `proposer` - Address proposing the upgrade
+    ///
+    /// # Returns
+    /// ID of the new upgrade proposal
+    pub fn propose_upgrade(
+        env: Env,
+        from_version: VersionInfo,
+        to_version: VersionInfo,
+        upgrade_type: UpgradeType,
+        new_code: soroban_sdk::Bytes,
+        description: String,
+        proposer: Address,
+    ) -> u64 {
+        match upgrade::propose_upgrade(
+            &env,
+            from_version,
+            to_version,
+            upgrade_type,
+            new_code,
+            None,
+            description,
+            proposer,
+        ) {
+            Ok(id) => id,
+            Err(_) => panic!("propose_upgrade error"),
+        }
+    }
+
+    /// Approve an upgrade proposal (governance function)
+    ///
+    /// # Arguments
+    /// * `upgrade_id` - ID of the upgrade proposal
+    /// * `approver` - Address approving the upgrade (must have governance authority)
+    ///
+    /// # Returns
+    /// true if successful
+    pub fn approve_upgrade(env: Env, upgrade_id: u64, approver: Address) -> bool {
+        approver.require_auth();
+        match upgrade::approve_upgrade(&env, upgrade_id, &approver) {
+            Ok(_) => true,
+            Err(_) => panic!("approve_upgrade error"),
+        }
+    }
+
+    /// Execute an approved upgrade
+    ///
+    /// # Arguments
+    /// * `upgrade_id` - ID of the upgrade to execute
+    /// * `executor` - Address executing the upgrade
+    ///
+    /// # Returns
+    /// true if successful
+    pub fn execute_upgrade(env: Env, upgrade_id: u64, executor: Address) -> bool {
+        executor.require_auth();
+        match upgrade::execute_upgrade(&env, upgrade_id, &executor) {
+            Ok(_) => true,
+            Err(_) => panic!("execute_upgrade error"),
+        }
+    }
+
+    /// Simulate an upgrade without executing
+    ///
+    /// # Arguments
+    /// * `upgrade_id` - ID of the upgrade to simulate
+    ///
+    /// # Returns
+    /// Simulation result with state changes and warnings
+    pub fn simulate_upgrade(env: Env, upgrade_id: u64) -> SimulationResult {
+        match upgrade::simulate_upgrade(&env, upgrade_id) {
+            Ok(result) => result,
+            Err(_) => panic!("simulate_upgrade error"),
+        }
+    }
+
+    /// Cancel a pending or approved upgrade
+    ///
+    /// # Arguments
+    /// * `upgrade_id` - ID of the upgrade to cancel
+    /// * `canceller` - Address cancelling the upgrade
+    ///
+    /// # Returns
+    /// true if successful
+    pub fn cancel_upgrade(env: Env, upgrade_id: u64, canceller: Address) -> bool {
+        canceller.require_auth();
+        match upgrade::cancel_upgrade(&env, upgrade_id, &canceller) {
+            Ok(_) => true,
+            Err(_) => panic!("cancel_upgrade error"),
+        }
+    }
+
+    /// Get details of an upgrade proposal
+    ///
+    /// # Arguments
+    /// * `upgrade_id` - ID of the upgrade proposal
+    ///
+    /// # Returns
+    /// Upgrade proposal details
+    pub fn get_upgrade_proposal(env: Env, upgrade_id: u64) -> UpgradeProposal {
+        match upgrade::get_upgrade_proposal(&env, upgrade_id) {
+            Ok(proposal) => proposal,
+            Err(_) => panic!("get_upgrade_proposal error"),
+        }
+    }
+
+    /// Get all upgrade proposals (historical)
+    ///
+    /// # Returns
+    /// Vector of all upgrade proposals
+    pub fn get_all_upgrades(env: Env) -> Vec<UpgradeProposal> {
+        upgrade::get_all_upgrades(&env)
+    }
+
+    /// Get active upgrade proposals
+    ///
+    /// # Returns
+    /// Vector of pending or approved upgrades
+    pub fn get_active_upgrades(env: Env) -> Vec<UpgradeProposal> {
+        upgrade::get_active_upgrades(&env)
+    }
+
+    /// Check version compatibility
+    ///
+    /// # Arguments
+    /// * `from_version` - Source version
+    /// * `to_version` - Target version
+    ///
+    /// # Returns
+    /// Compatibility check result
+    pub fn check_version_compatibility(
+        env: Env,
+        from_version: VersionInfo,
+        to_version: VersionInfo,
+    ) -> String {
+        let compat = upgrade::check_version_compatibility(&env, &from_version, &to_version);
+        if compat.is_compatible {
+            String::from_str(&env, "compatible")
+        } else {
+            String::from_str(&env, "incompatible")
+        }
+    }
+
+    /// Get current contract version
+    ///
+    /// # Returns
+    /// Current VersionInfo
+    pub fn get_contract_version(env: Env) -> VersionInfo {
+        match upgrade::get_version(&env) {
+            Ok(version) => version,
+            Err(_) => panic!("get_contract_version error"),
+        }
     }
 }
 

@@ -1,4 +1,4 @@
-use soroban_sdk::{Address, Env, String, Symbol};
+use soroban_sdk::{Address, Env, Symbol};
 
 use crate::governance::proposals::get_proposal as load_proposal;
 use crate::governance::storage::store_proposal;
@@ -6,9 +6,7 @@ use crate::governance::types::{
     ExecutionPayload, Proposal, ProposalExecutedEvent, ProposalStatus, ProposalType,
 };
 use crate::governance::voting::finalize_proposal;
-use crate::guild::membership::{add_member, remove_member};
 use crate::guild::storage as guild_storage;
-use crate::guild::types::Role;
 
 const EXECUTION_DEADLINE_SECONDS: u64 = 3 * 24 * 60 * 60; // 3 days after passing
 

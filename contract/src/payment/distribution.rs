@@ -1,4 +1,4 @@
-use soroban_sdk::{contracttype, Address, Env, String, Vec, contracterror, panic_with_error};
+use soroban_sdk::{Address, Env, String, Vec, contracterror};
 use crate::payment::types::{
     PaymentPool, Recipient, DistributionRule, DistributionStatus,
     PaymentPoolCreatedEvent, RecipientAddedEvent, DistributionExecutedEvent,
@@ -7,7 +7,6 @@ use crate::payment::types::{
 use crate::payment::storage::{
     get_payment_pool, store_payment_pool, get_pool_recipients, add_recipient_to_pool,
     recipient_exists_in_pool, update_pool_status, clear_pool_recipients, get_next_pool_id,
-    pool_exists,
 };
 
 /// Error types for payment distribution operations

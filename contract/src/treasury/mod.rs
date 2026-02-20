@@ -19,14 +19,7 @@ pub use management::{
 
 pub use storage::initialize_treasury_storage;
 
-pub use types::{
-    Allowance,
-    Budget,
-    Transaction,
-    TransactionStatus,
-    TransactionType,
-    Treasury,
-};
+pub use types::Transaction;
 // Tests disabled pending fixes
 #[cfg(test)]
 mod tests;

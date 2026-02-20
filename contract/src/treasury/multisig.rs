@@ -19,7 +19,7 @@ pub fn validate_threshold(signers_len: u32, threshold: u32) {
 
 /// Authorize and verify the address is a treasury signer.
 /// Call this ONLY when the address has not been authorized yet in this invocation.
-pub fn assert_signer(env: &Env, treasury: &Treasury, addr: &Address) {
+pub fn assert_signer(_env: &Env, treasury: &Treasury, addr: &Address) {
     addr.require_auth();
     ensure_is_signer(treasury, addr);
 }

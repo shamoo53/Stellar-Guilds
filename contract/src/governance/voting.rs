@@ -1,9 +1,8 @@
-use soroban_sdk::{Address, Env, String, Symbol};
+use soroban_sdk::{Address, Env, Symbol};
 
-use crate::governance::storage::{get_all_votes, get_config, get_delegate, get_proposal as load_proposal, get_vote, set_delegation, store_proposal, store_vote, remove_delegation};
+use crate::governance::storage::{get_all_votes, get_config, get_delegate, get_proposal as load_proposal, set_delegation, store_proposal, store_vote, remove_delegation};
 use crate::governance::types::{Proposal, ProposalFinalizedEvent, ProposalStatus, Vote, VoteCastEvent, VoteDecision};
 use crate::guild::storage as guild_storage;
-use crate::guild::types::Role;
 use crate::governance::types::role_weight;
 
 const EVENT_TOPIC_VOTE_CAST: &str = "vote_cast";
@@ -30,7 +29,7 @@ fn resolve_delegate(env: &Env, guild_id: u64, addr: &Address) -> Address {
 fn compute_total_weight_and_tallies(env: &Env, proposal: &Proposal) -> (i128, i128, i128, i128) {
     // returns (total_votes_weight, for_weight, against_weight, abstain_weight)
     let votes_map = get_all_votes(env, proposal.id);
-    let cfg = get_config(env, proposal.guild_id);
+    let _cfg = get_config(env, proposal.guild_id);
 
     let members = guild_storage::get_all_members(env, proposal.guild_id);
 
@@ -65,7 +64,7 @@ fn compute_total_weight_and_tallies(env: &Env, proposal: &Proposal) -> (i128, i1
 pub fn vote(env: &Env, proposal_id: u64, voter: Address, decision: VoteDecision) -> bool {
     voter.require_auth();
 
-    let mut proposal = load_proposal(env, proposal_id).unwrap_or_else(|| panic!("proposal not found"));
+    let proposal = load_proposal(env, proposal_id).unwrap_or_else(|| panic!("proposal not found"));
 
     if !matches!(proposal.status, ProposalStatus::Active) {
         panic!("proposal not active");
