@@ -99,6 +99,12 @@ use allowance::{
     revoke as allowance_revoke, AllowanceOperation, TokenAllowance,
 };
 
+mod emergency;
+use emergency::{
+    is_paused as emerg_is_paused, pause_contract as emerg_pause_contract,
+    resume_contract as emerg_resume_contract,
+};
+
 mod multisig;
 use multisig::{
     // Registrar aliases to prevent recursive naming collisions
