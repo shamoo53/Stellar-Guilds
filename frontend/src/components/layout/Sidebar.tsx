@@ -25,7 +25,11 @@ const Sidebar = ({ className }: SidebarProps) => {
     { id: 'guilds', label: 'Guilds', href: '#', icon: <Users size={20} />, isActive: true },
     { id: 'bounties', label: 'Bounties', href: '#', icon: <Trophy size={20} /> },
     { id: 'governance', label: 'Governance', href: '#', icon: <Vote size={20} /> },
-    { id: 'profile', label: 'Profile', href: '#', icon: <User size={20} /> },
+    { id: 'profile', label: 'Profile', href: '/profile', icon: <User size={20} /> },
+    // social features
+    { id: 'feed', label: 'Feed', href: '/social/feed', icon: <Users size={20} /> },
+    { id: 'messages', label: 'Messages', href: '/social/messages', icon: <Users size={20} /> },
+    { id: 'forum', label: 'Forum', href: '/social/forum', icon: <Users size={20} /> },
   ]
 
   const NavItem = ({ item }: { item: SidebarItem }) => (
