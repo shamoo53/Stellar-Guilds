@@ -48,6 +48,18 @@ pub struct Guild {
     pub member_count: u32,
 }
 
+/// Guild configuration settings
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct GuildConfig {
+    /// Guild name
+    pub name: soroban_sdk::String,
+    /// Address of the guild admin/owner
+    pub admin: Address,
+    /// Maximum number of members allowed
+    pub member_limit: u32,
+}
+
 /// Member struct representing a guild member
 #[contracttype]
 #[derive(Clone, Debug)]
