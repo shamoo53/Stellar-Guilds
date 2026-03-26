@@ -1,10 +1,11 @@
 ﻿use crate::events::emit::emit_event;
 use crate::events::topics::{
-    ACT_CREATED, ACT_MEMBER_ADDED, ACT_MEMBER_REMOVED, ACT_ROLE_UPDATED, MOD_GUILD,
+    ACT_CREATED, ACT_JOINED, ACT_MEMBER_ADDED, ACT_MEMBER_REMOVED, ACT_ROLE_UPDATED, MOD_GUILD,
 };
 use crate::guild::storage;
 use crate::guild::types::{
-    Guild, GuildCreatedEvent, Member, MemberAddedEvent, MemberRemovedEvent, Role, RoleUpdatedEvent,
+    Guild, GuildCreatedEvent, GuildJoinedEvent, Member, MemberAddedEvent, MemberRemovedEvent, Role,
+    RoleUpdatedEvent,
 };
 use soroban_sdk::{Address, Env, String, Vec};
 
@@ -330,7 +331,65 @@ pub fn update_role(
     Ok(true)
 }
 
-// â”€â”€â”€ Query helpers (no events) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+/// Self-join a guild
+///
+/// Allows any address to add themselves to an existing guild as a `Member`.
+/// The caller **must** have signed the transaction — `caller.require_auth()`
+/// is enforced inside this function so that the Soroban runtime verifies the
+/// authorization before any state is written.
+///
+/// # Events emitted
+/// - `(guild, joined)` → `GuildJoinedEvent`
+///
+/// # Arguments
+/// * `env`      - The contract environment
+/// * `guild_id` - The ID of the guild to join
+/// * `caller`   - The address of the account joining (must sign the transaction)
+///
+/// # Returns
+/// `Ok(true)` on success.
+///
+/// # Errors
+/// - `"Guild not found"` — no guild exists with the given `guild_id`.
+/// - `"Already a member of this guild"` — `caller` is already in the membership map.
+pub fn join_guild(env: &Env, guild_id: u64, caller: Address) -> Result<bool, String> {
+    // Soroban auth: the caller must have signed this invocation.
+    caller.require_auth();
+
+    let guild =
+        storage::get_guild(env, guild_id).ok_or(String::from_str(env, "Guild not found"))?;
+
+    if storage::has_member(env, guild_id, &caller) {
+        return Err(String::from_str(env, "Already a member of this guild"));
+    }
+
+    let timestamp = env.ledger().timestamp();
+    let member = Member {
+        address: caller.clone(),
+        role: Role::Member,
+        joined_at: timestamp,
+    };
+    storage::store_member(env, guild_id, &member);
+
+    let mut updated_guild = guild;
+    updated_guild.member_count += 1;
+    storage::update_guild(env, &updated_guild);
+
+    emit_event(
+        env,
+        MOD_GUILD,
+        ACT_JOINED,
+        GuildJoinedEvent {
+            guild_id,
+            caller,
+            joined_at: timestamp,
+        },
+    );
+
+    Ok(true)
+}
+
+// ─── Query helpers (no events) ────────────────────────────────────────────────
 
 pub fn get_member(env: &Env, guild_id: u64, address: Address) -> Result<Member, String> {
     storage::get_member(env, guild_id, &address).ok_or(String::from_str(env, "Member not found"))

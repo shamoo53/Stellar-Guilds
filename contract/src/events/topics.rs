@@ -57,6 +57,7 @@ pub const ACT_FAILED: &str = "failed";
 pub const ACT_MEMBER_ADDED: &str = "member_added";
 pub const ACT_MEMBER_REMOVED: &str = "member_removed";
 pub const ACT_ROLE_UPDATED: &str = "role_updated";
+pub const ACT_JOINED: &str = "joined";
 
 // =========== Bounty-specific actions ===========
 

@@ -4,6 +4,9 @@ export { Input } from './ui/Input'
 export { Card } from './ui/Card'
 export { Modal } from './ui/Modal'
 
+// Error Boundary
+export { ErrorBoundary } from './ErrorBoundary'
+
 // Bounty Components
 export { BountyCard } from './bounty'
 export type { BountyStatus } from './bounty'

@@ -4,6 +4,7 @@ import "../globals.css";
 import { getMessages } from 'next-intl/server';
 import { NextIntlClientProvider } from 'next-intl';
 import { locales, defaultLocale, type Locale } from '@/i18n';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -34,9 +35,11 @@ export default async function RootLayout({
     <html lang={locale} className="dark">
       <body className={inter.className}>
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <div className="min-h-screen flex flex-col bg-stellar-navy text-stellar-white font-sans">
-            {children}
-          </div>
+          <ErrorBoundary>
+            <div className="min-h-screen flex flex-col bg-stellar-navy text-stellar-white font-sans">
+              {children}
+            </div>
+          </ErrorBoundary>
         </NextIntlClientProvider>
       </body>
     </html>

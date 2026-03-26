@@ -5,7 +5,7 @@ use soroban_sdk::{contract, contractimpl, Address, Env, String, Vec};
 mod events;
 mod guild;
 use guild::membership::{
-    add_member, create_guild, get_all_members, get_member, has_permission, is_member,
+    add_member, create_guild, get_all_members, get_member, has_permission, is_member, join_guild,
     remove_member, update_role,
 };
 use guild::storage;
@@ -315,6 +315,24 @@ impl StellarGuildsContract {
     /// true if the address is a member, false otherwise
     pub fn is_member(env: Env, guild_id: u64, address: Address) -> bool {
         is_member(&env, guild_id, address)
+    }
+
+    /// Join an existing guild as a member
+    ///
+    /// The caller must sign the transaction. They will be added with
+    /// `Role::Member` if not already present.
+    ///
+    /// # Arguments
+    /// * `guild_id` - The ID of the guild to join
+    /// * `caller`   - The address joining (must auth)
+    ///
+    /// # Returns
+    /// true if successful, panics otherwise
+    pub fn join_guild(env: Env, guild_id: u64, caller: Address) -> bool {
+        match join_guild(&env, guild_id, caller) {
+            Ok(result) => result,
+            Err(e) => panic!("{:?}", e),
+        }
     }
 
     /// Check if a member has permission for a required role

@@ -82,6 +82,15 @@ pub struct GuildCreatedEvent {
     pub created_at: u64,
 }
 
+/// Event emitted when a member self-joins a guild
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct GuildJoinedEvent {
+    pub guild_id: u64,
+    pub caller: Address,
+    pub joined_at: u64,
+}
+
 /// Event emitted when a member is added
 #[contracttype]
 #[derive(Clone, Debug)]

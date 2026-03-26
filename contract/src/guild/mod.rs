@@ -10,3 +10,6 @@ pub mod storage;
 /// - `storage`: Manages persistent storage of guilds and members
 /// - `membership`: Core functions for guild and member management
 pub mod types;
+
+#[cfg(test)]
+pub mod tests;
