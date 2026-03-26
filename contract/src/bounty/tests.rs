@@ -1567,6 +1567,258 @@ fn test_approve_bounty_not_funded_fails() {
     client.approve_bounty(&bounty_id, &admin, &assignee);
 }
 
+// ============ Claim Payout Tests ============
+
+#[test]
+fn test_claim_payout_success() {
+    let env = setup_env();
+    let owner = Address::generate(&env);
+    let funder = Address::generate(&env);
+    let claimer = Address::generate(&env);
+    let token = create_mock_token(&env, &owner);
+
+    set_ledger_timestamp(&env, 1000);
+    env.mock_all_auths();
+
+    let contract_id = register_and_init_contract(&env);
+    let client = StellarGuildsContractClient::new(&env, &contract_id);
+
+    let guild_id = setup_guild(&client, &env, &owner);
+
+    mint_tokens(&env, &token, &funder, 1000);
+
+    let title = String::from_str(&env, "Task");
+    let description = String::from_str(&env, "Description");
+    let bounty_id = client.create_bounty(
+        &guild_id,
+        &owner,
+        &title,
+        &description,
+        &100i128,
+        &token,
+        &2000u64,
+    );
+
+    client.fund_bounty(&bounty_id, &funder, &100i128);
+    client.approve_bounty(&bounty_id, &owner, &claimer);
+    client.claim_bounty(&bounty_id, &claimer);
+
+    let submission = String::from_str(&env, "https://github.com/pr/123");
+    client.submit_work(&bounty_id, &submission);
+    client.approve_completion(&bounty_id, &owner);
+
+    // Claim payout directly - no need for separate release_escrow call
+    let result = client.claim_payout(&bounty_id, &claimer);
+    assert_eq!(result, true);
+
+    // Claimer should have received the funds
+    let claimer_balance = get_token_balance(&env, &token, &claimer);
+    assert_eq!(claimer_balance, 100);
+
+    // Bounty should have funded_amount reset to 0
+    let bounty = client.get_bounty(&bounty_id);
+    assert_eq!(bounty.funded_amount, 0);
+}
+
+#[test]
+#[should_panic(expected = "Bounty is not completed")]
+fn test_claim_payout_not_completed_fails() {
+    let env = setup_env();
+    let owner = Address::generate(&env);
+    let funder = Address::generate(&env);
+    let claimer = Address::generate(&env);
+    let token = create_mock_token(&env, &owner);
+
+    set_ledger_timestamp(&env, 1000);
+    env.mock_all_auths();
+
+    let contract_id = register_and_init_contract(&env);
+    let client = StellarGuildsContractClient::new(&env, &contract_id);
+
+    let guild_id = setup_guild(&client, &env, &owner);
+
+    mint_tokens(&env, &token, &funder, 1000);
+
+    let title = String::from_str(&env, "Task");
+    let description = String::from_str(&env, "Description");
+    let bounty_id = client.create_bounty(
+        &guild_id,
+        &owner,
+        &title,
+        &description,
+        &100i128,
+        &token,
+        &2000u64,
+    );
+
+    client.fund_bounty(&bounty_id, &funder, &100i128);
+    client.approve_bounty(&bounty_id, &owner, &claimer);
+    client.claim_bounty(&bounty_id, &claimer);
+
+    // Try to claim payout without completion
+    client.claim_payout(&bounty_id, &claimer);
+}
+
+#[test]
+#[should_panic(expected = "Only the approved claimer can claim payout")]
+fn test_claim_payout_wrong_claimer_fails() {
+    let env = setup_env();
+    let owner = Address::generate(&env);
+    let funder = Address::generate(&env);
+    let approved_claimer = Address::generate(&env);
+    let other_address = Address::generate(&env);
+    let token = create_mock_token(&env, &owner);
+
+    set_ledger_timestamp(&env, 1000);
+    env.mock_all_auths();
+
+    let contract_id = register_and_init_contract(&env);
+    let client = StellarGuildsContractClient::new(&env, &contract_id);
+
+    let guild_id = setup_guild(&client, &env, &owner);
+
+    mint_tokens(&env, &token, &funder, 1000);
+
+    let title = String::from_str(&env, "Task");
+    let description = String::from_str(&env, "Description");
+    let bounty_id = client.create_bounty(
+        &guild_id,
+        &owner,
+        &title,
+        &description,
+        &100i128,
+        &token,
+        &2000u64,
+    );
+
+    client.fund_bounty(&bounty_id, &funder, &100i128);
+    client.approve_bounty(&bounty_id, &owner, &approved_claimer);
+    client.claim_bounty(&bounty_id, &approved_claimer);
+
+    let submission = String::from_str(&env, "https://github.com/pr/123");
+    client.submit_work(&bounty_id, &submission);
+    client.approve_completion(&bounty_id, &owner);
+
+    // Different claimer tries to claim payout
+    client.claim_payout(&bounty_id, &other_address);
+}
+
+#[test]
+fn test_claim_payout_double_claim_is_noop() {
+    let env = setup_env();
+    let owner = Address::generate(&env);
+    let funder = Address::generate(&env);
+    let claimer = Address::generate(&env);
+    let token = create_mock_token(&env, &owner);
+
+    set_ledger_timestamp(&env, 1000);
+    env.mock_all_auths();
+
+    let contract_id = register_and_init_contract(&env);
+    let client = StellarGuildsContractClient::new(&env, &contract_id);
+
+    let guild_id = setup_guild(&client, &env, &owner);
+
+    mint_tokens(&env, &token, &funder, 1000);
+
+    let title = String::from_str(&env, "Task");
+    let description = String::from_str(&env, "Description");
+    let bounty_id = client.create_bounty(
+        &guild_id,
+        &owner,
+        &title,
+        &description,
+        &100i128,
+        &token,
+        &2000u64,
+    );
+
+    client.fund_bounty(&bounty_id, &funder, &100i128);
+    client.approve_bounty(&bounty_id, &owner, &claimer);
+    client.claim_bounty(&bounty_id, &claimer);
+
+    let submission = String::from_str(&env, "https://github.com/pr/123");
+    client.submit_work(&bounty_id, &submission);
+    client.approve_completion(&bounty_id, &owner);
+
+    // First claim succeeds
+    let result = client.claim_payout(&bounty_id, &claimer);
+    assert_eq!(result, true);
+
+    // Verify funds transferred
+    let balance_after_first = get_token_balance(&env, &token, &claimer);
+    assert_eq!(balance_after_first, 100);
+
+    // Second claim also returns true (is a no-op due to checks-effects-interactions pattern)
+    // The funded_amount is already 0, so nothing transfers
+    let result2 = client.claim_payout(&bounty_id, &claimer);
+    assert_eq!(result2, true);
+
+    // Balance should remain the same
+    let balance_after_second = get_token_balance(&env, &token, &claimer);
+    assert_eq!(balance_after_second, 100);
+}
+
+#[test]
+fn test_claim_payout_no_funds_to_claim() {
+    let env = setup_env();
+    let owner = Address::generate(&env);
+    let funder = Address::generate(&env);
+    let claimer = Address::generate(&env);
+    let token = create_mock_token(&env, &owner);
+
+    set_ledger_timestamp(&env, 1000);
+    env.mock_all_auths();
+
+    let contract_id = register_and_init_contract(&env);
+    let client = StellarGuildsContractClient::new(&env, &contract_id);
+
+    let guild_id = setup_guild(&client, &env, &owner);
+
+    mint_tokens(&env, &token, &funder, 1000);
+
+    let title = String::from_str(&env, "Task");
+    let description = String::from_str(&env, "Description");
+    let bounty_id = client.create_bounty(
+        &guild_id,
+        &owner,
+        &title,
+        &description,
+        &100i128,
+        &token,
+        &2000u64,
+    );
+
+    // Partially fund
+    client.fund_bounty(&bounty_id, &funder, &50i128);
+    
+    // Create another bounty to fully fund it
+    let bounty_id2 = client.create_bounty(
+        &guild_id,
+        &owner,
+        &title,
+        &description,
+        &100i128,
+        &token,
+        &2000u64,
+    );
+    
+    client.fund_bounty(&bounty_id2, &funder, &100i128);
+    client.approve_bounty(&bounty_id2, &owner, &claimer);
+    client.claim_bounty(&bounty_id2, &claimer);
+
+    let submission = String::from_str(&env, "https://github.com/pr/123");
+    client.submit_work(&bounty_id2, &submission);
+    client.approve_completion(&bounty_id2, &owner);
+
+    // Claim payout with only 100 funds available
+    let result = client.claim_payout(&bounty_id2, &claimer);
+    assert_eq!(result, true);
+
+    let balance = get_token_balance(&env, &token, &claimer);
+    assert_eq!(balance, 100);
+}
+
 // ============ Serialization Tests ============
 
 #[test]
@@ -1598,6 +1850,7 @@ fn test_bounty_serialization() {
     assert_eq!(bounty.status, deserialized.status);
     assert_eq!(bounty.reward_amount, deserialized.reward_amount);
 }
+
 
 #[test]
 fn test_escrow_state_serialization() {

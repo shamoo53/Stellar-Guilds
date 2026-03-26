@@ -13,8 +13,9 @@ use guild::types::{Member, Role};
 
 mod bounty;
 use bounty::{
-    approve_bounty, approve_completion, cancel_bounty, claim_bounty, create_bounty, expire_bounty,
-    fund_bounty, get_bounty_data, get_guild_bounties_list, release_escrow, submit_work, Bounty,
+    approve_bounty, approve_completion, cancel_bounty, claim_bounty, claim_payout, create_bounty,
+    expire_bounty, fund_bounty, get_bounty_data, get_guild_bounties_list, release_escrow,
+    submit_work, Bounty,
 };
 
 mod treasury;
@@ -1549,6 +1550,22 @@ impl StellarGuildsContract {
     /// `true` if bounty was expired and refunded
     pub fn expire_bounty(env: Env, bounty_id: u64) -> bool {
         expire_bounty(&env, bounty_id)
+    }
+
+    /// Claim bounty payout - claimer pulls funds from escrow to their own address
+    ///
+    /// This function allows an approved claimer to claim their payout after the bounty
+    /// completion has been approved. Uses checks-effects-interactions pattern to prevent
+    /// reentrancy attacks.
+    ///
+    /// # Arguments
+    /// * `bounty_id` - The ID of the bounty
+    /// * `claimer` - Address of the claimer claiming the payout (must be the approved claimer)
+    ///
+    /// # Returns
+    /// `true` if payout claim was successful
+    pub fn claim_payout(env: Env, bounty_id: u64, claimer: Address) -> bool {
+        claim_payout(&env, bounty_id, claimer)
     }
 
     /// Get bounty by ID

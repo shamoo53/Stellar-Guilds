@@ -454,11 +454,63 @@ pub fn expire_bounty(env: &Env, bounty_id: u64) -> bool {
     true
 }
 
-// â”€â”€â”€ Query helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+/// Claim bounty payout - allows claimer to pull funds from escrow to their own address
+///
+/// This is called by the claimer (assignee) after bounty completion approval.
+/// Uses checks-effects-interactions pattern: state is updated first to prevent reentrancy.
+///
+/// # Events emitted
+/// - `(bounty, released)` → `EscrowReleasedEvent`
+pub fn claim_payout(env: &Env, bounty_id: u64, claimer: Address) -> bool {
+    claimer.require_auth();
+
+    if dispute_storage::is_reference_locked(env, &DisputeReference::Bounty, bounty_id) {
+        panic!("Bounty is in active dispute");
+    }
+
+    let mut bounty = get_bounty(env, bounty_id).expect("Bounty not found");
+
+    if bounty.status != BountyStatus::Completed {
+        panic!("Bounty is not completed");
+    }
+
+    let stored_claimer = bounty.claimer.clone().expect("No claimer for this bounty");
+    if stored_claimer != claimer {
+        panic!("Unauthorized: Only the approved claimer can claim payout");
+    }
+
+    // EFFECTS: Update state FIRST to prevent reentrancy
+    let payout_amount = bounty.funded_amount;
+    bounty.funded_amount = 0;
+    store_bounty(env, &bounty);
+
+    // INTERACTIONS: Only transfer after state is updated
+    if payout_amount > 0 {
+        release_funds(env, &bounty.token, &claimer, payout_amount);
+
+        emit_event(
+            env,
+            MOD_BOUNTY,
+            ACT_RELEASED,
+            EscrowReleasedEvent {
+                bounty_id,
+                recipient: claimer,
+                amount: payout_amount,
+                token: bounty.token,
+            },
+        );
+    }
+
+    true
+}
+
+// â"€â"€â"€ Query helpers â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€â"€
 
 pub fn get_bounty_data(env: &Env, bounty_id: u64) -> Bounty {
     get_bounty(env, bounty_id).expect("Bounty not found")
 }
+
+
 
 pub fn get_guild_bounties_list(env: &Env, guild_id: u64) -> Vec<Bounty> {
     get_guild_bounties(env, guild_id)
