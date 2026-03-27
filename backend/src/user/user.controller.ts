@@ -16,6 +16,13 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+} from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
@@ -26,6 +33,7 @@ import {
   SearchUserDto,
   AssignRoleDto,
   UserRole,
+  UserProfileDto,
 } from './dto/user.dto';
 
 @Controller('users')
@@ -53,8 +61,20 @@ export class UserController {
 
   /**
    * Get user profile by ID (public)
+   * Returns user profile excluding sensitive fields like password, email, walletAddress
    */
   @Get(':userId')
+  @ApiOperation({ summary: 'Get user profile by ID (public)' })
+  @ApiParam({ name: 'userId', description: 'User ID (UUID)' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User profile retrieved successfully',
+    type: UserProfileDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'User not found',
+  })
   @HttpCode(HttpStatus.OK)
   async getUserProfile(@Param('userId') userId: string) {
     return this.userService.getUserProfile(userId);

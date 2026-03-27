@@ -12,6 +12,7 @@ import {
   Min,
   Max,
 } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export enum UserRole {
   USER = 'USER',
@@ -22,17 +23,40 @@ export enum UserRole {
 
 // Get user profile (public)
 export class UserProfileDto {
+  @ApiProperty({ description: 'User ID' })
   id!: string;
+
+  @ApiProperty({ description: 'Username' })
   username!: string;
+
+  @ApiProperty({ description: 'First name' })
   firstName!: string;
+
+  @ApiProperty({ description: 'Last name' })
   lastName!: string;
+
+  @ApiPropertyOptional({ description: 'User bio' })
   bio?: string;
+
+  @ApiPropertyOptional({ description: 'Avatar URL' })
   avatarUrl?: string;
+
+  @ApiPropertyOptional({ description: 'Profile bio' })
   profileBio?: string;
+
+  @ApiPropertyOptional({ description: 'Profile URL' })
   profileUrl?: string;
+
+  @ApiPropertyOptional({ description: 'Discord handle' })
   discordHandle?: string;
+
+  @ApiPropertyOptional({ description: 'Twitter handle' })
   twitterHandle?: string;
+
+  @ApiProperty({ description: 'Account creation date' })
   createdAt!: Date;
+
+  @ApiProperty({ description: 'User role', enum: UserRole })
   role!: UserRole;
 }
 

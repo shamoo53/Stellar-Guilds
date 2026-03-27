@@ -82,4 +82,58 @@ describe('UserService', () => {
       }),
     ).rejects.toThrow(NotFoundException);
   });
+
+  describe('getUserProfile', () => {
+    it('returns user profile without sensitive fields', async () => {
+      const mockUser = {
+        id: 'user-1',
+        username: 'johndoe',
+        firstName: 'John',
+        lastName: 'Doe',
+        bio: 'Hello world',
+        avatarUrl: 'http://example.com/avatar.png',
+        profileBio: 'Profile bio',
+        profileUrl: 'http://example.com/profile',
+        discordHandle: 'johndoe#1234',
+        twitterHandle: '@johndoe',
+        createdAt: new Date('2024-01-01'),
+        role: 'USER',
+      };
+      prisma.user.findUnique.mockResolvedValue(mockUser);
+
+      const result = await service.getUserProfile('user-1');
+
+      expect(result).toEqual(mockUser);
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
+        select: {
+          id: true,
+          username: true,
+          firstName: true,
+          lastName: true,
+          bio: true,
+          avatarUrl: true,
+          profileBio: true,
+          profileUrl: true,
+          discordHandle: true,
+          twitterHandle: true,
+          createdAt: true,
+          role: true,
+        },
+      });
+      // Ensure sensitive fields are not in the result
+      expect(result).not.toHaveProperty('password');
+      expect(result).not.toHaveProperty('email');
+      expect(result).not.toHaveProperty('refreshToken');
+      expect(result).not.toHaveProperty('walletAddress');
+    });
+
+    it('throws NotFoundException when user does not exist', async () => {
+      prisma.user.findUnique.mockResolvedValue(null);
+
+      await expect(service.getUserProfile('non-existent-id')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
 });
