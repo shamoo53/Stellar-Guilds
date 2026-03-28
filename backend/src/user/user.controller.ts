@@ -30,7 +30,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RoleGuard } from '../auth/guards/role.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import {
-  UpdateUserProfileDto,
+  UpdateUserDto,
   ChangePasswordDto,
   SearchUserDto,
   AssignRoleDto,
@@ -89,9 +89,9 @@ export class UserController {
   @Patch('me')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  async updateProfile(
+  async update(
     @Request() req: any,
-    @Body() updateDto: UpdateUserProfileDto,
+    @Body() updateDto: UpdateUserDto,
   ) {
     return this.userService.updateUserProfile(req.user.userId, updateDto);
   }

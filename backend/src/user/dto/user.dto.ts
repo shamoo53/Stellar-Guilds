@@ -38,6 +38,9 @@ export class UserProfileDto {
   @ApiPropertyOptional({ description: 'User bio' })
   bio?: string;
 
+  @ApiPropertyOptional({ description: 'User location' })
+  location?: string;
+
   @ApiPropertyOptional({ description: 'Avatar URL' })
   avatarUrl?: string;
 
@@ -53,6 +56,9 @@ export class UserProfileDto {
   @ApiPropertyOptional({ description: 'Twitter handle' })
   twitterHandle?: string;
 
+  @ApiPropertyOptional({ description: 'GitHub handle' })
+  githubHandle?: string;
+
   @ApiProperty({ description: 'Account creation date' })
   createdAt!: Date;
 
@@ -61,7 +67,7 @@ export class UserProfileDto {
 }
 
 // Update user profile
-export class UpdateUserProfileDto {
+export class UpdateUserDto {
   @IsOptional()
   @IsString()
   @MinLength(1)
@@ -81,6 +87,11 @@ export class UpdateUserProfileDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(100)
+  location?: string;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(500)
   profileBio?: string;
 
@@ -97,7 +108,14 @@ export class UpdateUserProfileDto {
   @IsString()
   @MaxLength(100)
   twitterHandle?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  githubHandle?: string;
 }
+
+export class UpdateUserProfileDto extends UpdateUserDto {}
 
 // Change password
 export class ChangePasswordDto {

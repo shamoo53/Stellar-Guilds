@@ -91,11 +91,13 @@ describe('UserService', () => {
         firstName: 'John',
         lastName: 'Doe',
         bio: 'Hello world',
+        location: 'Lagos',
         avatarUrl: 'http://example.com/avatar.png',
         profileBio: 'Profile bio',
         profileUrl: 'http://example.com/profile',
         discordHandle: 'johndoe#1234',
         twitterHandle: '@johndoe',
+        githubHandle: 'johndoe',
         createdAt: new Date('2024-01-01'),
         role: 'USER',
       };
@@ -112,11 +114,13 @@ describe('UserService', () => {
           firstName: true,
           lastName: true,
           bio: true,
+          location: true,
           avatarUrl: true,
           profileBio: true,
           profileUrl: true,
           discordHandle: true,
           twitterHandle: true,
+          githubHandle: true,
           createdAt: true,
           role: true,
         },
@@ -134,6 +138,59 @@ describe('UserService', () => {
       await expect(service.getUserProfile('non-existent-id')).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  describe('updateUserProfile', () => {
+    it('patches a single field without overwriting others', async () => {
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'user-1',
+        username: 'johndoe',
+      });
+      prisma.user.update.mockResolvedValue({
+        id: 'user-1',
+        username: 'johndoe',
+        firstName: 'John',
+        lastName: 'Doe',
+        bio: 'Updated bio',
+        location: 'Lagos',
+        avatarUrl: null,
+        profileBio: null,
+        profileUrl: null,
+        discordHandle: null,
+        twitterHandle: '@johndoe',
+        githubHandle: 'johndoe',
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-02'),
+        role: 'USER',
+      });
+
+      const result = await service.updateUserProfile('user-1', {
+        bio: 'Updated bio',
+      });
+
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
+        data: { bio: 'Updated bio' },
+        select: {
+          id: true,
+          username: true,
+          firstName: true,
+          lastName: true,
+          bio: true,
+          location: true,
+          avatarUrl: true,
+          profileBio: true,
+          profileUrl: true,
+          discordHandle: true,
+          twitterHandle: true,
+          githubHandle: true,
+          createdAt: true,
+          updatedAt: true,
+          role: true,
+        },
+      });
+      expect(result.bio).toBe('Updated bio');
     });
   });
 });

@@ -62,6 +62,7 @@ model User {
   firstName     String
   lastName      String
   bio           String?
+  location      String?
   avatarUrl     String?
   role          UserRole  @default(USER)
   isActive      Boolean   @default(true)
@@ -74,6 +75,7 @@ model User {
   profileUrl    String?
   discordHandle String?
   twitterHandle String?
+  githubHandle  String?
 
   // Relations
   ownedGuilds        Guild[]             @relation("UserOwnerGuilds")

@@ -8,7 +8,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import {
-  UpdateUserProfileDto,
+  UpdateUserDto,
   ChangePasswordDto,
   SearchUserDto,
   AssignRoleDto,
@@ -37,11 +37,13 @@ export class UserService {
         firstName: true,
         lastName: true,
         bio: true,
+        location: true,
         avatarUrl: true,
         profileBio: true,
         profileUrl: true,
         discordHandle: true,
         twitterHandle: true,
+        githubHandle: true,
         createdAt: true,
         role: true,
       },
@@ -77,11 +79,13 @@ export class UserService {
         firstName: true,
         lastName: true,
         bio: true,
+        location: true,
         avatarUrl: true,
         profileBio: true,
         profileUrl: true,
         discordHandle: true,
         twitterHandle: true,
+        githubHandle: true,
         walletAddress: true,
         role: true,
         isActive: true,
@@ -101,7 +105,7 @@ export class UserService {
   /**
    * Update user profile
    */
-  async updateUserProfile(userId: string, updateDto: UpdateUserProfileDto) {
+  async updateUserProfile(userId: string, updateDto: UpdateUserDto) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
@@ -116,6 +120,7 @@ export class UserService {
         ...(updateDto.firstName && { firstName: updateDto.firstName }),
         ...(updateDto.lastName && { lastName: updateDto.lastName }),
         ...(updateDto.bio !== undefined && { bio: updateDto.bio }),
+        ...(updateDto.location !== undefined && { location: updateDto.location }),
         ...(updateDto.profileBio !== undefined && {
           profileBio: updateDto.profileBio,
         }),
@@ -128,6 +133,9 @@ export class UserService {
         ...(updateDto.twitterHandle !== undefined && {
           twitterHandle: updateDto.twitterHandle,
         }),
+        ...(updateDto.githubHandle !== undefined && {
+          githubHandle: updateDto.githubHandle,
+        }),
       },
       select: {
         id: true,
@@ -135,11 +143,13 @@ export class UserService {
         firstName: true,
         lastName: true,
         bio: true,
+        location: true,
         avatarUrl: true,
         profileBio: true,
         profileUrl: true,
         discordHandle: true,
         twitterHandle: true,
+        githubHandle: true,
         createdAt: true,
         updatedAt: true,
         role: true,
@@ -271,11 +281,13 @@ export class UserService {
           firstName: true,
           lastName: true,
           bio: true,
+          location: true,
           avatarUrl: true,
           profileBio: true,
           profileUrl: true,
           discordHandle: true,
           twitterHandle: true,
+          githubHandle: true,
           createdAt: true,
           role: true,
         },
@@ -306,6 +318,7 @@ export class UserService {
         firstName: true,
         lastName: true,
         bio: true,
+        location: true,
         avatarUrl: true,
         createdAt: true,
         role: true,
