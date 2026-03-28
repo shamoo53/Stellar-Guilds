@@ -7,6 +7,7 @@ import { useSidebarStore } from '@/store/sidebarStore'
 import { cn } from '@/lib/utils'
 import { WalletConnectButton } from '@/components/WalletConnector/WalletConnectButton'
 import { WalletModal } from '@/components/WalletConnector/WalletModal'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
 
 interface HeaderProps {
   className?: string
@@ -44,6 +45,7 @@ const Header = ({ className }: HeaderProps) => {
           </nav>
 
           <div className="ml-4 flex items-center space-x-3">
+            <ThemeToggle />
             <button className="p-2 rounded-full hover:bg-stellar-lightNavy transition-colors">
               <Vote size={20} className="text-stellar-slate" />
             </button>

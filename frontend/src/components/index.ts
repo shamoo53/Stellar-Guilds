@@ -53,6 +53,5 @@ export { useSecurity } from '@/hooks/useSecurity'
 
 // Stores
 export { useSidebarStore } from '@/store/sidebarStore'
-export { useThemeStore } from '@/store/themeStore'
 export { useWalletStore } from '@/store/walletStore'
 export { useSecurityStore } from '@/store/securityStore'
