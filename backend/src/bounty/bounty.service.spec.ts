@@ -8,6 +8,8 @@ const mockPrisma = () => {
   const prisma = {
     bounty: {
       findUnique: jest.fn(),
+      findMany: jest.fn(),
+      count: jest.fn(),
       updateMany: jest.fn(),
     },
     $transaction: jest.fn(),
@@ -40,6 +42,140 @@ describe('BountyService', () => {
     service = module.get(BountyService);
     prisma = module.get(PrismaService);
     mailer = module.get(MailerService);
+  });
+
+  describe('findAll', () => {
+    it('filters by status when status is provided', async () => {
+      const mockBounties = [
+        { id: 'b1', title: 'Bounty 1', status: 'IN_PROGRESS', rewardAmount: 100, rewardToken: 'STELLAR' },
+      ];
+      prisma.bounty.findMany.mockResolvedValue(mockBounties);
+      prisma.bounty.count.mockResolvedValue(1);
+
+      const result = await service.findAll({ status: 'IN_PROGRESS' });
+
+      expect(prisma.bounty.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ status: 'IN_PROGRESS' }),
+        }),
+      );
+      expect(result.items).toEqual(mockBounties);
+      expect(result.total).toBe(1);
+    });
+
+    it('filters by tokenType (rewardToken) when provided', async () => {
+      const mockBounties = [
+        { id: 'b1', title: 'XLM Bounty', status: 'OPEN', rewardAmount: 50, rewardToken: 'XLM' },
+      ];
+      prisma.bounty.findMany.mockResolvedValue(mockBounties);
+      prisma.bounty.count.mockResolvedValue(1);
+
+      const result = await service.findAll({ tokenType: 'XLM' });
+
+      expect(prisma.bounty.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ rewardToken: 'XLM' }),
+        }),
+      );
+      expect(result.items).toEqual(mockBounties);
+    });
+
+    it('filters by minimum reward amount', async () => {
+      const mockBounties = [
+        { id: 'b1', title: 'High Value', status: 'OPEN', rewardAmount: 500, rewardToken: 'STELLAR' },
+      ];
+      prisma.bounty.findMany.mockResolvedValue(mockBounties);
+      prisma.bounty.count.mockResolvedValue(1);
+
+      const result = await service.findAll({ minReward: 200 });
+
+      expect(prisma.bounty.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ rewardAmount: { gte: 200 } }),
+        }),
+      );
+      expect(result.items).toEqual(mockBounties);
+    });
+
+    it('combines all filters: status, tokenType, and minReward', async () => {
+      const mockBounties = [
+        { id: 'b1', title: 'Combined Filter Test', status: 'OPEN', rewardAmount: 300, rewardToken: 'XLM' },
+      ];
+      prisma.bounty.findMany.mockResolvedValue(mockBounties);
+      prisma.bounty.count.mockResolvedValue(1);
+
+      const result = await service.findAll({
+        status: 'OPEN',
+        tokenType: 'XLM',
+        minReward: 200,
+      });
+
+      expect(prisma.bounty.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            status: 'OPEN',
+            rewardToken: 'XLM',
+            rewardAmount: { gte: 200 },
+          }),
+        }),
+      );
+      expect(result.items).toEqual(mockBounties);
+    });
+
+    it('defaults to OPEN status when no status filter is provided', async () => {
+      prisma.bounty.findMany.mockResolvedValue([]);
+      prisma.bounty.count.mockResolvedValue(0);
+
+      await service.findAll({});
+
+      expect(prisma.bounty.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ status: 'OPEN' }),
+        }),
+      );
+    });
+
+    it('applies guildId filter in combination with other filters', async () => {
+      const mockBounties = [
+        { id: 'b1', title: 'Guild Bounty', status: 'OPEN', rewardAmount: 100, rewardToken: 'STELLAR', guildId: 'guild-1' },
+      ];
+      prisma.bounty.findMany.mockResolvedValue(mockBounties);
+      prisma.bounty.count.mockResolvedValue(1);
+
+      const result = await service.findAll({
+        status: 'OPEN',
+        guildId: 'guild-1',
+        minReward: 50,
+      });
+
+      expect(prisma.bounty.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            status: 'OPEN',
+            guildId: 'guild-1',
+            rewardAmount: { gte: 50 },
+          }),
+        }),
+      );
+      expect(result.items).toEqual(mockBounties);
+    });
+
+    it('returns paginated results with correct page and size', async () => {
+      prisma.bounty.findMany.mockResolvedValue([]);
+      prisma.bounty.count.mockResolvedValue(50);
+
+      const result = await service.findAll({ page: 2, size: 10 });
+
+      expect(prisma.bounty.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          skip: 20,
+          take: 10,
+        }),
+      );
+      expect(result.page).toBe(2);
+      expect(result.size).toBe(10);
+      expect(result.total).toBe(50);
+    });
   });
 
   describe('submitWork', () => {

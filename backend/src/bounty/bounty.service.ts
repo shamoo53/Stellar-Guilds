@@ -54,9 +54,37 @@ export class BountyService {
     return bounty;
   }
 
-  async findAll(page = 0, size = 20, guildId?: string) {
-    const where: any = { status: 'OPEN' };
-    if (guildId) where.guildId = guildId;
+  async findAll(filters: {
+    page?: number;
+    size?: number;
+    status?: string;
+    tokenType?: string;
+    minReward?: number;
+    guildId?: string;
+  }) {
+    const page = filters.page ?? 0;
+    const size = filters.size ?? 20;
+
+    const where: any = {};
+
+    // Default to OPEN status if no status filter provided
+    if (filters.status) {
+      where.status = filters.status;
+    } else {
+      where.status = 'OPEN';
+    }
+
+    if (filters.tokenType) {
+      where.rewardToken = filters.tokenType;
+    }
+
+    if (filters.minReward !== undefined) {
+      where.rewardAmount = { gte: filters.minReward };
+    }
+
+    if (filters.guildId) {
+      where.guildId = filters.guildId;
+    }
 
     const [items, total] = await Promise.all([
       this.prisma.bounty.findMany({
