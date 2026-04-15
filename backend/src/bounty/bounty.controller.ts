@@ -157,4 +157,15 @@ export class BountyController {
   ) {
     return this.service.reviewWork(id, dto, req.user.userId);
   }
+
+  /**
+   * Soft delete a bounty
+   * DELETE /bounties/:id
+   */
+  @UseGuards(JwtAuthGuard)
+  @Delete(':id')
+  async remove(@Param('id') id: string, @Request() req: any) {
+    return this.service.remove(id, req.user.userId);
+  }
+
 }
